@@ -1,9 +1,5 @@
 arquivo_lai_SIDA_202303 <- readRDS("~/Github/creditos_ativos/arquivo_lai_SIDA_202303.RDS")
 
-summary(arquivo_lai_SIDA_202303)
-
-
-NROW(unique(arquivo_lai_SIDA_202303$numero_inscricao))
 
 
 arquivo_lai_SIDA_202303 %>%
@@ -40,13 +36,22 @@ arquivo_lai_SIDA_202303 %>%
   arrange(desc(quantidade))
 
 
-fab<-
-  arquivo_lai_SIDA_202303 %>%
-  mutate(ano = lubridate::year(data_inscricao)) %>%
-  slice_head(n=10)
-
 
 arquivo_lai_SIDA_202303 %>%
+  group_by(receita_principal) %>%
+  summarise(
+    quantidade =  n(),
+    valor_consolidado_total = sum(valor_consolidado),
+    media_valor_consolidado = mean(valor_consolidado)
+  ) %>%
+  arrange(desc(quantidade))
+
+
+
+corte_temporal_pf<-
+  arquivo_lai_SIDA_202303 %>%
+  filter(tipo_devedor == "PRINCIPAL",
+         tipo_pessoa == "Pessoa física") %>%
   mutate(ano = lubridate::year(data_inscricao)) %>%
   group_by(ano) %>%
   summarise(
@@ -54,3 +59,24 @@ arquivo_lai_SIDA_202303 %>%
     valor_consolidado_total = sum(valor_consolidado)
   ) %>%
   arrange(desc(quantidade))
+
+
+corte_temporal_pj<-
+  arquivo_lai_SIDA_202303 %>%
+  filter(tipo_devedor == "PRINCIPAL",
+         tipo_pessoa == "Pessoa jurídica") %>%
+  mutate(ano = lubridate::year(data_inscricao)) %>%
+  group_by(ano) %>%
+  summarise(
+    quantidade =  n(),
+    valor_consolidado_total = sum(valor_consolidado)
+  ) %>%
+  arrange(desc(quantidade))
+
+
+
+
+head_sample<-
+  arquivo_lai_SIDA_202303 %>%
+  slice_head(n=1000)
+
