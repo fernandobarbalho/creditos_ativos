@@ -1,3 +1,6 @@
+####Análise dados mais atuais
+
+
 arquivo_lai_SIDA_202303 <- readRDS("~/Github/creditos_ativos/arquivo_lai_SIDA_202303.RDS")
 
 
@@ -76,7 +79,73 @@ corte_temporal_pj<-
 
 
 
-head_sample<-
-  arquivo_lai_SIDA_202303 %>%
-  slice_head(n=1000)
+####Análise longitudinal
 
+
+arquivo_lai_SIDA_202303 <- readRDS("~/Github/creditos_ativos/arquivo_lai_SIDA_202303.RDS")
+
+arquivo_lai_SIDA_202203 <- readRDS("~/Github/creditos_ativos/arquivo_lai_SIDA_202203.RDS")
+
+dados_longitudinais<-
+  arquivo_lai_SIDA_202203 %>%
+  anti_join(arquivo_lai_SIDA_202303, by="numero_inscricao")
+
+dados_longitudinais_trabalho<-
+  dados_longitudinais%>%
+  filter(tipo_devedor=="PRINCIPAL")
+
+dados_longitudinais_trabalho$data_max_referencia<-as.Date("2022-12-31")
+
+diferenca_meses <- as.numeric(difftime(as.Date("2022-12-31"), as.Date("2022-12-01"), units = "months"))
+
+diferenca_meses <- as.numeric(difftime(dados$data_fim, dados$data_inicio, units = "months"))
+
+# Instale a biblioteca "lubridate" caso ainda não a tenha instalado
+# install.packages("lubridate")
+
+# Carregue a biblioteca "lubridate"
+library(lubridate)
+
+# Carregue a biblioteca "lubridate"
+library(lubridate)
+
+
+# Converta as colunas de data para o formato de data usando a função "ymd()" do "lubridate"
+dados$data_inicio <- ymd(dados$data_inicio)
+dados$data_fim <- ymd(dados$data_fim)
+
+# Calcule a diferença entre as datas em meses usando a função "interval()" do "lubridate"
+dados_longitudinais_trabalho$diferenca_max_meses <- interval(dados_longitudinais_trabalho$data_inscricao,
+                                                             dados_longitudinais_trabalho$data_max_referencia) / months(1)
+
+glimpse(dados_longitudinais_trabalho)
+
+dados_longitudinais_trabalho %>%
+  slice_sample(n= 10) %>%
+  readr::write_csv("amostra_dados_longitudinais.csv")
+
+
+# Instale os pacotes necessários
+install.packages("survival")
+install.packages("survminer")
+
+# Carregue os pacotes
+library(survival)
+library(survminer)
+
+# Carregue os dados do arquivo CSV
+
+# Crie um objeto de sobrevivência utilizando a função Surv() do pacote survival
+sobrevivencia <- Surv(time = dados_longitudinais_trabalho$diferenca_max_meses)
+
+# Realize a comparação de grupos usando o teste de log-rank
+comparacao <- survdiff(sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho)
+
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste <- survfit(sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho)
+
+# Exiba o resultado do teste
+summary(comparacao)
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste, data = dados_longitudinais_trabalho, risk.table = TRUE)
