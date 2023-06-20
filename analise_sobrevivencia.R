@@ -53,7 +53,7 @@ ajuste_ajuizado <- survfit(sobrevivencia ~ indicador_ajuizado, data = dados_long
 ggsurvplot(ajuste_ajuizado, data = dados_longitudinais_trabalho, risk.table = TRUE)
 
 
-############## Análises de sobrevivência com grupos para situacao_inscricao
+############## Análises de sobrevivência com grupos para tipo_situacao_inscricao
 
 unique(dados_longitudinais_trabalho$tipo_situacao_inscricao)
 
@@ -74,6 +74,8 @@ ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho, risk.table = TR
 
 
 ########## Situacao_inscricao
+questionr::freq(dados_longitudinais_trabalho$situacao_inscricao, cum = TRUE, sort = "dec", total = TRUE)
+
 dados_longitudinais_trabalho %>%
   group_by(situacao_inscricao) %>%
   summarise(
@@ -85,8 +87,35 @@ dados_longitudinais_trabalho %>%
   slice_max(order_by = valor_consolidado_total, n=10)
 
 
+top_4_situacao_inscricao<-
+  (dados_longitudinais_trabalho %>%
+  group_by(situacao_inscricao) %>%
+  summarise(
+    quantidade =  n()
+  ) %>%
+  slice_max(order_by = quantidade, n=4))$situacao_inscricao
 
-questionr::freq(dados_longitudinais_trabalho$situacao_inscricao, cum = TRUE, sort = "dec", total = TRUE)
+
+trabalho_situacao_inscricao<-
+dados_longitudinais_trabalho %>%
+  filter(situacao_inscricao %in% top_4_situacao_inscricao)
+
+sobrevivencia_situacao_inscricao <- Surv(time = trabalho_situacao_inscricao$diferenca_max_meses)
+
+# Realize a comparação de grupos usando o teste de log-rank
+comparacao_situacao_inscricao <- survdiff(sobrevivencia_situacao_inscricao ~ situacao_inscricao, data = trabalho_situacao_inscricao)
+
+# Exiba o resultado do teste
+summary(comparacao_situacao_inscricao)
+
+
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_situacao_inscricao <- survfit(sobrevivencia_situacao_inscricao ~ situacao_inscricao, data = trabalho_situacao_inscricao)
+
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_situacao_inscricao, data = trabalho_situacao_inscricao, risk.table = TRUE)
+
 
 ########## receita_principal
 
