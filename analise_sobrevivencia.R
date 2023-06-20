@@ -132,3 +132,31 @@ dados_longitudinais_trabalho %>%
 questionr::freq(dados_longitudinais_trabalho$receita_principal, cum = TRUE, sort = "dec", total = TRUE)
 
 
+top_4_receita_principal<-
+  (dados_longitudinais_trabalho %>%
+     group_by(receita_principal) %>%
+     summarise(
+       quantidade =  n()
+     ) %>%
+     slice_max(order_by = quantidade, n=4))$receita_principal
+
+
+trabalho_receita_principal<-
+  dados_longitudinais_trabalho %>%
+  filter(situacao_inscricao %in% top_4_receita_principal)
+
+sobrevivencia_situacao_inscricao <- Surv(time = trabalho_situacao_inscricao$diferenca_max_meses)
+
+# Realize a comparação de grupos usando o teste de log-rank
+comparacao_situacao_inscricao <- survdiff(sobrevivencia_situacao_inscricao ~ situacao_inscricao, data = trabalho_situacao_inscricao)
+
+# Exiba o resultado do teste
+summary(comparacao_situacao_inscricao)
+
+
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_situacao_inscricao <- survfit(sobrevivencia_situacao_inscricao ~ situacao_inscricao, data = trabalho_situacao_inscricao)
+
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_situacao_inscricao, data = trabalho_situacao_inscricao, risk.table = TRUE)
