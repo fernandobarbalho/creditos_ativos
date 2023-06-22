@@ -96,9 +96,6 @@ dados_longitudinais_trabalho<-
 
 dados_longitudinais_trabalho$data_max_referencia<-as.Date("2022-12-31")
 
-diferenca_meses <- as.numeric(difftime(as.Date("2022-12-31"), as.Date("2022-12-01"), units = "months"))
-
-diferenca_meses <- as.numeric(difftime(dados$data_fim, dados$data_inicio, units = "months"))
 
 # Instale a biblioteca "lubridate" caso ainda não a tenha instalado
 # install.packages("lubridate")
@@ -106,18 +103,44 @@ diferenca_meses <- as.numeric(difftime(dados$data_fim, dados$data_inicio, units 
 # Carregue a biblioteca "lubridate"
 library(lubridate)
 
-# Carregue a biblioteca "lubridate"
-library(lubridate)
 
-
-# Converta as colunas de data para o formato de data usando a função "ymd()" do "lubridate"
-dados$data_inicio <- ymd(dados$data_inicio)
-dados$data_fim <- ymd(dados$data_fim)
 
 # Calcule a diferença entre as datas em meses usando a função "interval()" do "lubridate"
 dados_longitudinais_trabalho$diferenca_max_meses <- interval(dados_longitudinais_trabalho$data_inscricao,
                                                              dados_longitudinais_trabalho$data_max_referencia) / months(1)
 
 
+dados_longitudinais_trabalho$diferenca_max_meses<- round(dados_longitudinais_trabalho$diferenca_max_meses,0)
 
+saveRDS(dados_longitudinais_trabalho,"dados_longitudinais_trabalho.RDS")
+
+set.seed(1972)
+#Dataframe incluindo dados censurados
+dados_censurados<-
+  arquivo_lai_SIDA_202203 %>%
+  filter(tipo_devedor=="PRINCIPAL") %>%
+  slice_sample(prop = 0.3) %>%
+  anti_join(dados_longitudinais_trabalho, by="numero_inscricao")
+
+
+dados_censurados$data_max_referencia<-as.Date("2022-12-31")
+
+
+dados_censurados$diferenca_max_meses <- interval(dados_censurados$data_inscricao,
+                                                 dados_censurados$data_max_referencia) / months(1)
+
+
+dados_censurados$diferenca_max_meses<- round(dados_censurados$diferenca_max_meses,0)
+
+dados_censurados$status<-0
+
+dados_longitudinais_trabalho_full<-
+  dados_censurados %>%
+  bind_rows(
+    dados_longitudinais_trabalho %>%
+      mutate(status=1) %>%
+      slice_sample(prop =.21)
+  )
+
+glimpse(dados_longitudinais_trabalho_full)
 
