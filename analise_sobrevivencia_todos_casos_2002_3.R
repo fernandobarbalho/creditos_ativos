@@ -8,6 +8,7 @@
 library(survival)
 library(survminer)
 library(questionr)
+library(cluster)
 
 
 
@@ -61,7 +62,12 @@ ajuste_ajuizado <- survfit(sobrevivencia ~ indicador_ajuizado, data = dados_long
 
 
 # Plote as curvas de sobrevivência para cada grupo
-ggsurvplot(ajuste_ajuizado, data = dados_longitudinais_trabalho_full,  conf.int = TRUE, censor=FALSE, surv.median.line= "hv", risk.table = TRUE)
+ggsurvplot(ajuste_ajuizado,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE, censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = "tipo_pessoa",
+           risk.table = TRUE)
 
 
 ############## Análises de sobrevivência com grupos para tipo_situacao_inscricao
@@ -148,7 +154,13 @@ ajuste_situacao_inscricao <- survfit(sobrevivencia_situacao_inscricao ~ situacao
 
 
 # Plote as curvas de sobrevivência para cada grupo
-ggsurvplot(ajuste_situacao_inscricao, data = trabalho_situacao_inscricao, conf.int = TRUE, censor=FALSE, surv.median.line= "hv", risk.table = TRUE)
+ggsurvplot(ajuste_situacao_inscricao,
+           data = trabalho_situacao_inscricao,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = "tipo_pessoa",
+           risk.table = TRUE)
 
 
 ########## receita_principal
@@ -200,7 +212,12 @@ ajuste_receita_principal <- survfit(sobrevivencia_receita_principal ~ receita_pr
 
 
 # Plote as curvas de sobrevivência para cada grupo
-ggsurvplot(ajuste_receita_principal, data = trabalho_receita_principal, risk.table = TRUE)
+ggsurvplot(ajuste_receita_principal,
+           data = trabalho_receita_principal,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE)
 
 
 ##### Valor consolidado
@@ -211,3 +228,84 @@ dados_longitudinais_trabalho_full %>%
   scale_x_log10()
 
 
+#Preparação dos dados para trabalhar com clusters
+
+set.seed(1972)
+amostra_valor_consolidado<-
+  sample(dados_longitudinais_trabalho_full$valor_consolidado, size=1000 )
+
+
+
+
+purrr::map_dbl(2:4,function(k){
+  set.seed(1972)
+  print(k)
+  model_cluster<- pam(x=amostra_valor_consolidado,k)
+  model_cluster$silinfo$avg.width
+
+})
+
+model_cluster<- pam(x=amostra_valor_consolidado,4)
+
+summary(model_cluster)
+
+df_model<- tibble(valor= amostra_valor_consolidado, cluster= as.character(model_cluster$clustering))
+
+df_model_min_max<-
+  df_model %>%
+  group_by(cluster) %>%
+  summarise(
+    min_valor = min(valor),
+    max_valor = max(valor)
+  )
+
+dados_longitudinais_trabalho_full<-
+  dados_longitudinais_trabalho_full %>%
+  mutate(
+    cluster = case_when(
+      valor_consolidado <= 522953 ~ "1",
+      between(valor_consolidado,522954,3537409) ~ "2",
+      between(valor_consolidado,3537410,30300869) ~ "3",
+      valor_consolidado > 30300869 ~ "4"
+    )
+  )
+
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster) %>%
+  summarise(
+    n()
+  )
+
+
+###Análise de sobrevivência por cluster de valor consolidado
+
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_density(aes(x= valor_consolidado, fill = cluster), alpha=0.5) +
+  scale_x_log10()
+
+
+# Realize a comparação de grupos usando o teste de log-rank
+survdiff(sobrevivencia ~ cluster, data = dados_longitudinais_trabalho_full)
+
+
+
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_cluster <- survfit(sobrevivencia ~ cluster, data = dados_longitudinais_trabalho_full)
+
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_cluster,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE)
+
+ggsurvplot(ajuste_cluster,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE,
+           facet.by = "tipo_pessoa")
