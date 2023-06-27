@@ -17,8 +17,8 @@ library(cluster)
 
 
 # Crie um objeto de sobrevivência utilizando a função Surv() do pacote survival
-sobrevivencia <- Surv(time = dados_longitudinais_trabalho_full_full$diferenca_max_meses,
-                      event = dados_longitudinais_trabalho_full_full$status)
+sobrevivencia <- Surv(time = dados_longitudinais_trabalho_full$diferenca_max_meses,
+                      event = dados_longitudinais_trabalho_full$status)
 
 
 ############## Análises de sobrevivência com grupos para tipo de pessoa
@@ -66,6 +66,14 @@ ggsurvplot(ajuste_ajuizado,
            data = dados_longitudinais_trabalho_full,
            conf.int = TRUE, censor=FALSE,
            surv.median.line= "hv",
+           risk.table = TRUE)
+
+
+# Plote as curvas de sobrevivência para cada grupo, com facet para tipo de pessoa
+ggsurvplot(ajuste_ajuizado,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE, censor=FALSE,
+           surv.median.line= "hv",
            facet.by = "tipo_pessoa",
            risk.table = TRUE)
 
@@ -94,8 +102,18 @@ ajuste_situacao <- survfit(sobrevivencia ~ tipo_situacao_inscricao, data = dados
 
 
 # Plote as curvas de sobrevivência para cada grupo
-ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full, conf.int = TRUE, censor=FALSE, surv.median.line= "hv", risk.table = TRUE)
+ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE, surv.median.line= "hv",
+           risk.table = TRUE)
 
+
+# Plote as curvas de sobrevivência para cada grupo com facet para tipo de pessoa
+ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE, surv.median.line= "hv",
+           facet.by = "tipo_pessoa",
+           risk.table = TRUE)
 
 
 ########## Situacao_inscricao
@@ -159,6 +177,15 @@ ggsurvplot(ajuste_situacao_inscricao,
            conf.int = TRUE,
            censor=FALSE,
            surv.median.line= "hv",
+           risk.table = TRUE)
+
+
+# Plote as curvas de sobrevivência para cada grupo com facet para tipo de pessoa
+ggsurvplot(ajuste_situacao_inscricao,
+           data = trabalho_situacao_inscricao,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
            facet.by = "tipo_pessoa",
            risk.table = TRUE)
 
@@ -217,6 +244,16 @@ ggsurvplot(ajuste_receita_principal,
            conf.int = TRUE,
            censor=FALSE,
            surv.median.line= "hv",
+           risk.table = TRUE)
+
+
+# Plote as curvas de sobrevivência para cada grupo com facet para indicador ajuizado
+ggsurvplot(ajuste_receita_principal,
+           data = trabalho_receita_principal,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = "indicador_ajuizado",
            risk.table = TRUE)
 
 
@@ -302,6 +339,7 @@ ggsurvplot(ajuste_cluster,
            surv.median.line= "hv",
            risk.table = TRUE)
 
+# Plote as curvas de sobrevivência para cada grupo com facet para tipo de pessoa
 ggsurvplot(ajuste_cluster,
            data = dados_longitudinais_trabalho_full,
            conf.int = TRUE,
@@ -309,3 +347,12 @@ ggsurvplot(ajuste_cluster,
            surv.median.line= "hv",
            risk.table = TRUE,
            facet.by = "tipo_pessoa")
+
+# Plote as curvas de sobrevivência para cada grupo com facet para indicador ajuizado
+ggsurvplot(ajuste_cluster,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE,
+           facet.by = "indicador_ajuizado")

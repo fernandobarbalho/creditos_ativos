@@ -123,7 +123,7 @@ dados_censurados<-
   anti_join(dados_longitudinais_trabalho, by="numero_inscricao")
 
 
-dados_censurados$data_max_referencia<-as.Date("2022-12-31")
+dados_censurados$data_max_referencia<-as.Date("2023-03-31")
 
 
 dados_censurados$diferenca_max_meses <- interval(dados_censurados$data_inscricao,
@@ -144,3 +144,4 @@ dados_longitudinais_trabalho_full<-
 
 glimpse(dados_longitudinais_trabalho_full)
 
+saveRDS(dados_longitudinais_trabalho_full,"dados_longitudinais_trabalho_full.RDS")
