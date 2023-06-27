@@ -94,7 +94,7 @@ dados_longitudinais_trabalho<-
   dados_longitudinais%>%
   filter(tipo_devedor=="PRINCIPAL")
 
-dados_longitudinais_trabalho$data_max_referencia<-as.Date("2022-12-31")
+dados_longitudinais_trabalho$data_max_referencia<-as.Date("2023-03-31")
 
 
 # Instale a biblioteca "lubridate" caso ainda não a tenha instalado
@@ -141,6 +141,22 @@ dados_longitudinais_trabalho_full<-
       mutate(status=1) %>%
       slice_sample(prop =.21)
   )
+
+
+dados_longitudinais_trabalho_full$data_max_referencia<-as.Date("2023-03-31")
+
+
+# Instale a biblioteca "lubridate" caso ainda não a tenha instalado
+# install.packages("lubridate")
+
+# Carregue a biblioteca "lubridate"
+library(lubridate)
+
+
+
+# Calcule a diferença entre as datas em meses usando a função "interval()" do "lubridate"
+dados_longitudinais_trabalho_full$diferenca_max_meses <- interval(dados_longitudinais_trabalho_full$data_inscricao,
+                                                                  dados_longitudinais_trabalho_full$data_max_referencia) / months(1)
 
 glimpse(dados_longitudinais_trabalho_full)
 
