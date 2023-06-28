@@ -307,6 +307,8 @@ dados_longitudinais_trabalho_full<-
     )
   )
 
+saveRDS(dados_longitudinais_trabalho_full, "dados_longitudinais_trabalho_full.RDS")
+
 dados_longitudinais_trabalho_full %>%
   group_by(cluster) %>%
   summarise(

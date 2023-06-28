@@ -1,0 +1,75 @@
+---
+title: "Análise de sobrevivência da dívida ativa"
+author: "Fernando Almeida Barbalho"
+format: html
+editor: visual
+execute: 
+  cache: true
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+# Carregue os pacotes
+library(survival)
+library(survminer)
+library(questionr)
+library(cluster)
+library(tidyverse)
+
+#Carrega a base de dados longitudinal
+dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
+
+```
+
+## Introdução
+
+A análise de sobrevivência é uma técnica estatística utilizada para investigar o tempo até que determinado evento ocorra. No contexto da dívida ativa brasileira, essa análise pode ser aplicada para compreender os períodos de tempo nos quais os créditos saem desse estado. Dessa forma, é possível identificar fatores que influenciam a probabilidade de um crédito ser quitado ou regularizado, permitindo uma análise mais detalhada e estratégica sobre a gestão da dívida ativa.
+
+Neste estudo, utilizamos dados provenientes dos dados abertos da Procuradoria-Geral da Fazenda Nacional (PGFN) para realizar uma análise de sobrevivência dos créditos ativos em março de 2022, comparando-os com a situação em março de 2023. Foram analisados diferentes grupos de créditos, considerando variáveis como tipo de pessoa (física ou jurídica), indicação de ajuizamento, tipo de receita, clusters de valores consolidados, situação da inscrição e tipo de situação da inscrição. Essa abordagem comparativa nos permite identificar padrões e tendências, auxiliando na compreensão dos fatores que influenciam a permanência ou resolução dos créditos na dívida ativa brasileira.
+
+## Análise por cluster de valores consolidado
+
+Os valores consolidados referem-se ao débito na data em que foi feita a extração do dado e engloba os acréscimos legais. O domínio desses valores é imenso, partindo de casos isolados na casa de centenas de reais a bilhões de reais.
+
+```{r}
+minimo = min(dados_longitudinais_trabalho_full$valor_consolidado)
+media = mean(dados_longitudinais_trabalho_full$valor_consolidado)
+mediana = median(dados_longitudinais_trabalho_full$valor_consolidado)
+maximo = max(dados_longitudinais_trabalho_full$valor_consolidado)
+```
+
+As estatísticas descritivas de valor consolidado são as que seguem:
+
+valor mínimo: `r minimo`
+
+média: `r media`
+
+mediana: `r mediana`
+
+valor máximo: `r maximo`
+
+A figura abaixo, onde o eixo horizontal está representado na escala logaritmica, mostra a distribuição dos dados.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_density(aes(x= valor_consolidado)) +
+  geom_vline(xintercept = mediana )+
+  scale_x_log10()+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  ) 
+```
+
+Como se vê no gráfico acima, a frequência de créditos ativos com valores consolidados é muito baixa até o valor de aproximadamente 1000 reais quando há um pico na densidade, com mais um aumento até chegar na mediana e em seguida uma gradual redução até o valor de aproximadamente um milhão de reais. A partir desse ponto há novamete baixa frequência que acompanha valores até mais de um bilhão de reais.
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
