@@ -161,3 +161,7 @@ dados_longitudinais_trabalho_full$diferenca_max_meses <- interval(dados_longitud
 glimpse(dados_longitudinais_trabalho_full)
 
 saveRDS(dados_longitudinais_trabalho_full,"dados_longitudinais_trabalho_full.RDS")
+
+dados_longitudinais_trabalho_full %>%
+  group_by(status) %>%
+  summarise(n())

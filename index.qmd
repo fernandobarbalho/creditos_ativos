@@ -17,9 +17,11 @@ library(survminer)
 library(questionr)
 library(cluster)
 library(tidyverse)
+library(colorspace)
 
 #Carrega a base de dados longitudinal
 dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
+
 
 ```
 
@@ -63,23 +65,42 @@ dados_longitudinais_trabalho_full %>%
   theme(
     panel.background = element_rect(fill = "white"),
     panel.grid = element_blank()
-  )+
-  geom_curve(
-    x = mediana + 0.5, y = 0.05,
-    xend = mediana, yend = 0.05,
-    arrow = arrow(length = unit(0.3, "cm"))
-  ) +
-  geom_text(
-    x = mediana + 0.6, y = 0.055,
-    label = "mediana",
-    hjust = 0, size = 4
   )
-
 ```
 
 Como se vê no gráfico acima, a frequência de créditos ativos com valores consolidados é muito baixa até o valor de aproximadamente 1000 reais quando há um pico na densidade, com mais um aumento até chegar na mediana e em seguida uma gradual redução até o valor de aproximadamente um milhão de reais. A partir desse ponto há novamete baixa frequência que acompanha valores até mais de um bilhão de reais.
 
-Para fazer uma análise por grupos de créditos baseados em valores consolidados, recorremos à técnica de clusterização. Utilizando critérios estatísticos e de organização da informação optamos por utilizar o modelo gerado para quatro grupos. Abaixo alguns gráficos e tabelas que descrevem os grupos.
+Para fazer uma análise por grupos de créditos baseados em valores consolidados, recorremos à técnica de clusterização. Utilizando critérios estatísticos e de organização da informação optamos por utilizar o modelo gerado para quatro grupos em ordem crescente de valores consolidados: 1, 2, 3, 4. Abaixo alguns gráficos e tabelas que descrevem os grupos.
+
+Começamos por um quadro resumo das estatísticas descritivas
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  )
+
+```
+
+Agora um gráfico de densidade
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_density(aes(x = valor_consolidado,  fill= cluster ), alpha= 0.5) +
+  scale_x_log10(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  scale_fill_discrete_qualitative(pal = "Pastel 1")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )
+```
 
 ```{r}
 #| echo: false
