@@ -18,6 +18,7 @@ library(questionr)
 library(cluster)
 library(tidyverse)
 library(colorspace)
+library(patchwork)
 
 #Carrega a base de dados longitudinal
 dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
@@ -350,7 +351,27 @@ dados_longitudinais_trabalho_full %>%
 
 Créditos ajuizados são minoria em quantidade mas quando se percebe a soma dos valores consolidados vê-se uma barra horizontal de comprimento quase cinco vezes maior do que os créditos não ajuizados. O mais provável é que os créditos ajuizados estejam associados com mais frequência em termos proporicionais aos clusters de valores consolidados maiores  e a pessoas jurídicas. Vamos às estatísticas descritivas dessas combinações de variáveis.
 
+Começando comparando as quantidades de créditos.
+
 ```{r}
+g1<-
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= cluster, fill= indicador_ajuizado, color= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  ) +
+  facet_wrap(tipo_pessoa~.)+
+  labs(fill= "Ajuizado",
+       color = "Ajuizado")
+  
+
+g2<- 
 dados_longitudinais_trabalho_full %>%
   ggplot() +
   geom_bar(aes(y= cluster, fill= indicador_ajuizado, color= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
@@ -358,12 +379,123 @@ dados_longitudinais_trabalho_full %>%
   theme_light() +
   theme(
     panel.background = element_rect(fill = "white"),
-    panel.grid = element_blank()
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
   ) +
-  facet_wrap(tipo_pessoa~.)
+  facet_wrap(tipo_pessoa~.) +
+  labs(fill= "Ajuizado",
+       color = "Ajuizado")
+
+g1+g2
+
+```
+
+E agora os valores consolidados totais
+
+```{r}
+
+g1<-
+  
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster, tipo_pessoa, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(cluster = reorder(cluster, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  )+
+  labs(x= "valores em R$ bi",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(tipo_pessoa ~.)
+
+
+g2<-
+  
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster, tipo_pessoa, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(cluster = reorder(cluster, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  )+
+  labs(x= "Distribuição",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(tipo_pessoa ~.)
+
+g1+g2
+
 ```
 
 
 
 Vamos à análise de sobrevivência
+
+Primeiro a verificação se os grupos formados pelos créditos ajuizados e não ajuizados são estatisticamente diferentes
+
+```{r}
+survdiff(sobrevivencia ~ indicador_ajuizado, data = dados_longitudinais_trabalho_full)
+```
+
+Novamente temos o teste de chi-quadrado demonstrando diferenças entre os grupos em relação à sobrevivência dos créditos.
+
+Agora ao longo do tempo
+
+```{r}
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_ajuizado <- survfit(sobrevivencia ~ indicador_ajuizado, data = dados_longitudinais_trabalho_full)
+
+ajuste_ajuizado
+```
+
+```{r}
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_ajuizado,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE, censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE)
+
+```
+
+A tabela e o gráfico não deixam dúvida da imensa diferença de sobrevivência dos créditos ajuizados. È mais que o dobro o número de meses relativo à marca de 50% de probabilidade de sobrevivência entre os dois grupos. Aqui de novo há uma aposta que o desdobramento da análise somando às categorias tipo de pessoa e clusters de valores consolidados vão indicar que combinações que envolvam pessoas jurídicas, processos ajuizados e altos valores estarão associados a maiores tempos de sobrevivência. Vamos ás tabelas e gráficos
+
+
+
+```{r}
+ajuste_ajuizado_pessoa_cluster <- survfit(sobrevivencia ~ indicador_ajuizado + tipo_pessoa+ cluster, data = dados_longitudinais_trabalho_full)
+
+ajuste_ajuizado_pessoa_cluster
+```
+```{r, fig.width=10, fig.height=7}
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_ajuizado,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE, censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = c("cluster", "tipo_pessoa"),
+           risk.table = TRUE)
+
+```
 
