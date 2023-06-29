@@ -150,7 +150,7 @@ ajuste_cluster <- survfit(sobrevivencia ~ cluster, data = dados_longitudinais_tr
 ajuste_cluster
 ```
 
-```{r fig.height=5}
+```{r fig.height=7}
 
 # Plote as curvas de sobrevivência para cada grupo
 ggsurvplot(ajuste_cluster,
@@ -197,7 +197,7 @@ dados_longitudinais_trabalho_full %>%
 
 Quem mais contribui no valor consolidado total
 
-```{r, fig.height= 3}
+```{r, fig.height= 2}
 dados_longitudinais_trabalho_full %>%
   group_by(tipo_pessoa) %>%
   summarise(
@@ -217,7 +217,40 @@ dados_longitudinais_trabalho_full %>%
 ```
 Pelo gráfico acima percebe-se que apesar do valor da mediana entre as duas classes não ser tão diferente, os valores extremos de pessoa jurídica fazem com que o total do valor consolidado para essa classe seja muito superior à pessoa física.
 
-O achado acima aliado ao fato já constatado que os créditos de maiores valores consolidados estão associados a maior tempo de sobrevivência, é possível anteciparmos que os créditos de pessoas jurídicas apresentem taxas de sobrevivência estatisticamente diferentes e superiores quando comparadas com as das pessoas físicas.
+O achado acima aliado ao fato já constatado que os créditos de maiores valores consolidados estão associados a maior tempo de sobrevivência, é possível anteciparmos que os créditos de pessoas jurídicas apresentem taxas de sobrevivência estatisticamente diferentes e superiores quando comparadas com as das pessoas físicas. Antes de irmos à análise de sobrevivência, um pouco de estatística descritiva da combinação de tipo de pessoa e cluster
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= cluster, fill= tipo_pessoa, color= tipo_pessoa  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )
+```
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster, tipo_pessoa) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(cluster = reorder(cluster, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= tipo_pessoa  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi")
+```
+
+
 
 ```{r}
 survdiff(sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho_full)
@@ -263,4 +296,74 @@ ggsurvplot(ajuste_cluster,
            facet.by = "tipo_pessoa",
            risk.table = TRUE)
 ```
+
+## Análise por crédito ajuizado
+
+Os créditos podem em algum momento ser ajuizado e isso leva os prazos a dependerem dos processos mais longos e complexos desse tipo de trâmite. A base de dados que trabalhamos tem indicação para cada crédito informado se foi ou não ajuizado. Vamos analisar essa categoria. Começando pelas estatísticas descritivas.
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  group_by(indicador_ajuizado) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  )
+```
+
+Como os valores se distribuem para as duas classes.
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_density(aes(x = valor_consolidado,  fill= indicador_ajuizado, color= indicador_ajuizado ), alpha= 0.5) +
+  scale_x_log10(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  ) 
+```
+
+A contribuição para o valor consolidado total
+
+```{r fig.height= 2}
+dados_longitudinais_trabalho_full %>%
+  group_by(indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(indicador_ajuizado = reorder(indicador_ajuizado, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= indicador_ajuizado, fill= indicador_ajuizado  ), alpha= 1, show.legend = FALSE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi")
+```
+
+Créditos ajuizados são minoria em quantidade mas quando se percebe a soma dos valores consolidados vê-se uma barra horizontal de comprimento quase cinco vezes maior do que os créditos não ajuizados. O mais provável é que os créditos ajuizados estejam associados com mais frequência em termos proporicionais aos clusters de valores consolidados maiores  e a pessoas jurídicas. Vamos às estatísticas descritivas dessas combinações de variáveis.
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= cluster, fill= indicador_ajuizado, color= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  ) +
+  facet_wrap(tipo_pessoa~.)
+```
+
+
+
+Vamos à análise de sobrevivência
 
