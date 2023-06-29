@@ -19,6 +19,7 @@ library(cluster)
 library(tidyverse)
 library(colorspace)
 library(patchwork)
+library(forcats)
 
 #Carrega a base de dados longitudinal
 dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
@@ -496,6 +497,125 @@ ggsurvplot(ajuste_ajuizado,
            surv.median.line= "hv",
            facet.by = c("cluster", "tipo_pessoa"),
            risk.table = TRUE)
+
+```
+
+A tabela e o gráfico acima trazem os resultados que espéravamos com a precisão das medidas. Duas combinações que merece destaque são as que se referem à linha do cluster 1. Oberva-se nesses casos que há uma grande diferença entre os tempos de PJ e PF na avaliação dos créditos ajuizados. Isso não ocorre no caso de PF. Mais ainda, no caso de PJ, o tempo para alcançar o 50% de sobrevivência é bem maior do que o de PJ, o que não combina com o que normalmente se espera na comparação dessas duas classes. Possivelmente o tipo da receita do principal associado a cada crédito pode explicar esse fenômeno. Nesse caso, é provável que haja algum tipo de receita de pessoa jurídica que não traz muita margem para ajuizamento e que afeta principalmente os créditos de menor valor.
+
+## Análise por tipo de receita do principal
+
+A sessão anterior terminou com a sugestão de que o fenômeno de rápida exclusão de créditos associados ao cluster 1, pessoa jurídica não ajuizada pode estar associada ao tipo de receita do principal. Essa hipótese é motivo suficente para analisarmos com mais cuidado essa variável e descobrirmos suas características tanto da estatística descritiva como da análise de sobrevivência.
+
+Começamos pela estatística descritiva. Nesse caso como há vários tipos de receita do principal, o nosso primeiro cuidado é identificar os mais relevantes para a análise. Dessa forma através de uma tabela de frequência identificamos os tipos de receita mais frequentes e cujas frequências acumuladas aproximem de 80%.
+
+```{r}
+head(questionr::freq(dados_longitudinais_trabalho_full$receita_principal, cum = TRUE, sort = "dec", total = TRUE),8)
+```
+
+Pela tabela de frequência concluímos que exsitem oito tipos de receita do principal mais frequentes que ao se somar suas frequências alcanca-se o valor de aproximadamente 89%. São esses oito tipos que vamos aprofundar nos próximos gráficos e tabelas.
+
+Começando pelas estatísticas descritivas básicas:
+
+```{r}
+top_8_receita_principal<-
+  (dados_longitudinais_trabalho_full %>%
+     group_by(receita_principal) %>%
+     summarise(
+       quantidade =  n()
+     ) %>%
+     slice_max(order_by = quantidade, n=8))$receita_principal
+
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal ) %>%
+  group_by(receita_principal) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  )
+
+
+```
+
+Agora o ranking para o valor consolidado total
+
+```{r}
+dados_longitudinais_trabalho_full%>%
+  filter(receita_principal %in% top_8_receita_principal ) %>%
+  group_by(receita_principal) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(receita_principal = reorder(receita_principal, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= receita_principal, fill= receita_principal  ), alpha= 1, show.legend = FALSE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi")
+```
+
+Agora como se dividem essas classes na observação de ajuizamento e clusters
+
+```{r fig.height= 10}
+g1<-
+  
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal) %>%
+  group_by(cluster, receita_principal, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= fct_reorder(receita_principal, valor_total, sum), fill= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(cluster ~.)
+
+
+g2<-
+  
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal) %>%
+  group_by(cluster, receita_principal, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= fct_reorder(receita_principal, valor_total, sum), fill= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(cluster ~.)
+
+g1/g2
 
 ```
 

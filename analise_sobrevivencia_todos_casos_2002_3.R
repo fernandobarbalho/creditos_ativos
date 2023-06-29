@@ -100,6 +100,7 @@ summary(comparacao_situacao)
 # Ajuste os modelos de sobrevivência separadamente para cada grupo
 ajuste_situacao <- survfit(sobrevivencia ~ tipo_situacao_inscricao, data = dados_longitudinais_trabalho_full)
 
+ajuste_situacao
 
 # Plote as curvas de sobrevivência para cada grupo
 ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
@@ -114,6 +115,20 @@ ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            censor=FALSE, surv.median.line= "hv",
            facet.by = "tipo_pessoa",
            risk.table = TRUE)
+
+
+ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE, surv.median.line= "hv",
+           facet.by = "cluster",
+           risk.table = TRUE)
+
+ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE, surv.median.line= "hv",
+           facet.by = "indicador_ajuizado",
+           risk.table = TRUE)
+
 
 
 ########## Situacao_inscricao
