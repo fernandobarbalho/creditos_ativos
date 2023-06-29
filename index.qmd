@@ -68,7 +68,7 @@ dados_longitudinais_trabalho_full %>%
   )
 ```
 
-Como se vê no gráfico acima, a frequência de créditos ativos com valores consolidados é muito baixa até o valor de aproximadamente 1000 reais quando há um pico na densidade, com mais um aumento até chegar na mediana e em seguida uma gradual redução até o valor de aproximadamente um milhão de reais. A partir desse ponto há novamete baixa frequência que acompanha valores até mais de um bilhão de reais.
+Como se vê no gráfico acima, a frequência de créditos ativos com valores consolidados é muito baixa até o valor de aproximadamente 1000 reais quando há um pico na densidade, com mais um aumento até chegar na mediana representada pela linha vermelha vertical e em seguida uma gradual redução até o valor de aproximadamente um milhão de reais. A partir desse ponto há novamente baixa frequência até o valor máximo.
 
 Para fazer uma análise por grupos de créditos baseados em valores consolidados, recorremos à técnica de clusterização. Utilizando critérios estatísticos e de organização da informação optamos por utilizar o modelo gerado para quatro grupos em ordem crescente de valores consolidados: 1, 2, 3, 4. Abaixo alguns gráficos e tabelas que descrevem os grupos.
 
@@ -92,19 +92,175 @@ Agora um gráfico de densidade
 ```{r}
 dados_longitudinais_trabalho_full %>%
   ggplot() +
-  geom_density(aes(x = valor_consolidado,  fill= cluster ), alpha= 0.5) +
+  geom_density(aes(x = valor_consolidado,  fill= cluster, color=cluster ), alpha= 0.8) +
   scale_x_log10(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
-  scale_fill_discrete_qualitative(pal = "Pastel 1")+
   theme_light() +
   theme(
     panel.background = element_rect(fill = "white"),
     panel.grid = element_blank()
+  ) 
+```
+
+A importância de cada grupo pelo total de valor consolidado
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(cluster = reorder(cluster, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= cluster  ), alpha= 1, show.legend = FALSE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi")
+```
+
+Como se vê no gráfico acima o cluster 4 mesmo tendo bem menos ocorrências do que os outros clusters, possui um valor consolidado agregado bem superior aos demais clusters.
+
+Com essa descrição dos dados podemos passar para as análises de sobrevivência por cluster de valores consolidado. Veja a tabela abaixo
+
+```{r}
+# Crie um objeto de sobrevivência utilizando a função Surv() do pacote survival
+sobrevivencia <- Surv(time = dados_longitudinais_trabalho_full$diferenca_max_meses,
+                      event = dados_longitudinais_trabalho_full$status)
+
+```
+
+
+```{r}
+survdiff(sobrevivencia ~ cluster, data = dados_longitudinais_trabalho_full)
+```
+No quadro acima o resultado indica que existem diferenças significativas nas taxas de sobrevivência entre os grupos identificados pelo "cluster", com base no teste qui-quadrado. Isso sugere que o fator de agrupamento influencia a sobrevivência dos indivíduos, e há uma associação estatisticamente significativa entre o agrupamento e o tempo de sobrevivência.
+
+Observando principalmente as duas últimas colunas do quadro, os clusters 1 e 2 são so que mais se desviam entre o tempo de sobrevivência esperado por um modelo e o tempo efetviamente observado. Como os valores para esses dois grupos são positivos há uma forte influência dos dois grupos para o aumento da expectativa de sobrevivência dos créditos ativos. O contrário, porém, em menor grau, se observa nos clusters 3 e 4.
+
+Agora uma tabela e um gráfico que mostras a evolução da probabilidade de sobrevivência.
+
+```{r}
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_cluster <- survfit(sobrevivencia ~ cluster, data = dados_longitudinais_trabalho_full)
+
+ajuste_cluster
+```
+
+```{r fig.height=5}
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_cluster,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE)
+
+```
+
+Pela tabela e pelo gráfico fica fácil perceber que o tempo para se alcançar 50% de probabilidade de sobrevivência é bem menor para o grupo de menores valores consolidados do que os demais grupos. 
+
+## Análise por tipo de pessoa: Física ou jurídica
+
+O poder econômico e de barbanha das pessoas jurídicas bem maior do que os das pessoas físicas podem influenciar de forma importante o tempo de sobrevivência de créditos ativos. Dessa forma faz-se necessário análises dos dados por esse corte. Veja as tabelas e os gráficos.
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  group_by(tipo_pessoa) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
   )
+
+```
+
+O gráfico de densidade para o tipo de pessoa
+```{r}
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_density(aes(x = valor_consolidado,  fill= tipo_pessoa, color= tipo_pessoa ), alpha= 0.5) +
+  scale_x_log10(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  ) 
+
+```
+
+Quem mais contribui no valor consolidado total
+
+```{r, fig.height= 3}
+dados_longitudinais_trabalho_full %>%
+  group_by(tipo_pessoa) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(tipo_pessoa = reorder(tipo_pessoa, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= tipo_pessoa, fill= tipo_pessoa  ), alpha= 1, show.legend = FALSE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi")
+```
+Pelo gráfico acima percebe-se que apesar do valor da mediana entre as duas classes não ser tão diferente, os valores extremos de pessoa jurídica fazem com que o total do valor consolidado para essa classe seja muito superior à pessoa física.
+
+O achado acima aliado ao fato já constatado que os créditos de maiores valores consolidados estão associados a maior tempo de sobrevivência, é possível anteciparmos que os créditos de pessoas jurídicas apresentem taxas de sobrevivência estatisticamente diferentes e superiores quando comparadas com as das pessoas físicas.
+
+```{r}
+survdiff(sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho_full)
+```
+Como se esperava, o teste chi-quadrado revela que há diferenças estatisticamente significantes nos dois grupos.
+A tabela e o gráfico em seguida revela como isso se dá ao longo do tempo
+
+
+```{r}
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_tipo_pessoa <- survfit(sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho_full)
+
+ajuste_tipo_pessoa
+```
+
+```{r fig.height= 5}
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_tipo_pessoa,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE)
+
+```
+
+O gráfico e a tabela demostram a diferença entre os tempos para 50% de probabilidade de sobrevivência. São 22 meses a mais para Pessoa Jurídica. É possível que esses tempos sejam maiores considerando extratos por grupos de valor consolidado. Vamos ao próximo gráfico.
+
+
+```{r}
+ajuste_tipo_pessoa_cluster <- survfit(sobrevivencia ~ tipo_pessoa + cluster, data = dados_longitudinais_trabalho_full)
+
+ajuste_tipo_pessoa_cluster
 ```
 
 ```{r}
-#| echo: false
-2 * 2
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_cluster,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = "tipo_pessoa",
+           risk.table = TRUE)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
