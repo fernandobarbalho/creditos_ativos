@@ -561,7 +561,62 @@ dados_longitudinais_trabalho_full%>%
   labs(x= "valores em R$ bi")
 ```
 
-Agora como se dividem essas classes na observação de ajuizamento e clusters
+Agora como se dividem essas classes na observação de ajuizamento e clusters.
+
+Vamos observar primeiro as quantidades
+
+```{r fig.height= 10}
+g1<-
+  
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal) %>%
+  ggplot() +
+  geom_bar(aes(y= fct_reorder(receita_principal, receita_principal, length), fill= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "Quantidade",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(cluster ~., scales = "free_x")
+
+
+g2<-
+  
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal) %>%
+  ggplot() +
+  geom_bar(aes(y= fct_reorder(receita_principal, receita_principal, length), fill= indicador_ajuizado  ), alpha= 1, show.legend = TRUE, position = "fill") +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "Proporção",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(cluster ~.)
+
+g1/g2
+
+```
+
+Ao observarmos as quantidades em valores absolutos, considerando ainda que os gráficos para essa situação estão com escala livre, verificamos a grande importância do Simples para o cluster 1. É possível ainda visualizar que esse tipo de receita tem ainda alguma relevância para o cluster 2, e é praticamente ausente nos demais clusters.
+
+Já quando observamos a distribuição proporcional das quantidades, fica fácil avaliar que a quantidade de créditos ajuizados só não é importante para o cluster 1, o que não ocorre para os demais clusters, para qualquer um dos tipos de receita. Mais especificamente para o Simples, é notório que esse quadro é bem mais acentuado.
+
+
+Agora analisamos os valores totais consolidados
 
 ```{r fig.height= 10}
 g1<-
@@ -619,3 +674,70 @@ g1/g2
 
 ```
 
+Quando observamos os valores totais, percebemos a importância dos lançamentos ajuizados mesmo para o cluster 1 onde a quntidade desse tipo de lançamento é bem inferior do que a classe dos não ajuizados. A úncia exceção significativa para essa regra refere-se aos tributos de Simples nacional onde os valores consolidados de não ajuizados são maiores do que os valores ajuizados.
+
+Agora vamos às análises de sobrevivência. Começando com a comparação entre as classes do grupo
+
+```{r}
+trabalho_receita_principal<-
+  dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal)
+
+
+sobrevivencia_receita_principal <- Surv(time = trabalho_receita_principal$diferenca_max_meses,
+                                        event = trabalho_receita_principal$status)
+
+
+# Realize a comparação de grupos usando o teste de log-rank
+survdiff(sobrevivencia_receita_principal ~ receita_principal,
+                                          data = trabalho_receita_principal)
+```
+
+O teste chi-quadrado indica que os grupos têm comportamento diferente na sobrevivência dos créditos ativos. Mais importante do que isso, o quadro acima indica a forte discrepância entre o esperado de um modelo de equilíbrio e o que foi observado para a classe que corresponde aos créditos de receita para o simples nacional. Nesse caso, favorecendo uma sobrevivência bastante inferior ao esperado quando comparado com as demais classes.
+
+Agora vamos às expectavias medianas de sobrevivência.
+
+```{r}
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_receita_principal <- survfit(sobrevivencia_receita_principal ~ receita_principal, data = trabalho_receita_principal)
+
+ajuste_receita_principal
+
+```
+
+```{r, fig.height= 9}
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_receita_principal,
+           data = trabalho_receita_principal,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           risk.table = TRUE)
+
+```
+
+Como já estava se desenhando desde o começo da análise, a probabilidade de sobrevivência mediana está associada a um número de meses que corresponde à metade do que é observado na classe que vem logoa seguir e corresponde a 1/3 do tempo observado nas classe mais longevas: CSLL e IRPJ.
+
+Para confirmar a influência dos valores consolidados na definição da lacuna de sobrevivência de pessoa jurídica no cluster 1, vamos agora à análise que cruza as categorias de tipo de receita e cluster.
+
+```{r}
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_receita_principal_cluster <- survfit(sobrevivencia_receita_principal ~ cluster + receita_principal +indicador_ajuizado, data = trabalho_receita_principal)
+
+ajuste_receita_principal_cluster
+
+```
+
+```{r fig.height=10, fig.width=10}
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_receita_principal,
+           data = trabalho_receita_principal,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = c("cluster","indicador_ajuizado"),
+           risk.table = TRUE)
+
+```
+
+Com a tabela e gráfico acima, confirma-se que os créditos relacionados ao Simples nacional estão associados ao fenômeno da redução da expetativa mediana de sobrevivência da combinação de pessoa jurídica com o cluster 1, principalmente quado se foca nos lançamentos ajuizados.

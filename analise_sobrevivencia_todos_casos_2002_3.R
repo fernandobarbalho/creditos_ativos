@@ -217,7 +217,7 @@ dados_longitudinais_trabalho_full %>%
   ) %>%
   slice_max(order_by = valor_consolidado_total, n=10)
 
-questionr::freq(dados_longitudinais_trabalho_full$receita_principal, cum = TRUE, sort = "dec", total = TRUE)
+head(questionr::freq(dados_longitudinais_trabalho_full$receita_principal, cum = TRUE, sort = "dec", total = TRUE),8)
 
 
 top_8_receita_principal<-
