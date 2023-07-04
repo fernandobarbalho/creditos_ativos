@@ -723,3 +723,20 @@ ggsurvplot(ajuste_receita_principal,
            censor=FALSE,
            surv.median.line= "hv")
 ```
+
+## Análise por tipo de receita do principal
+
+-   Destaque para os baixos valores de mediana para dívida ativa no cluster 1 não ajuizada (69 meses) e Multas isoladas (63 meses)
+
+-   os créditos relacionados ao Simples nacional e Multas isoladas estão associados ao fenômeno da redução da expetativa mediana de sobrevivência da combinação de pessoa jurídica com o cluster 1, principalmente quado se foca nos lançamentos ajuizados
+
+```{r}
+ggsurvplot(ajuste_receita_principal,
+           data = trabalho_receita_principal,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = c("cluster","indicador_ajuizado"),
+           risk.table = TRUE)
+
+```
