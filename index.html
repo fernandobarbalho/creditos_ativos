@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.475">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Fernando Almeida Barbalho">
+
+<title>Análise de sobrevivência da dívida ativa</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="index_files/libs/clipboard/clipboard.min.js"></script>
+<script src="index_files/libs/quarto-html/quarto.js"></script>
+<script src="index_files/libs/quarto-html/popper.min.js"></script>
+<script src="index_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="index_files/libs/quarto-html/anchor.min.js"></script>
+<link href="index_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="index_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="index_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="index_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="index_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Análise de sobrevivência da dívida ativa</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Fernando Almeida Barbalho </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<div class="cell" data-hash="index_cache/html/setup_10db3ff151aeffb40b3ccfd5c1f0cad3">
+
+</div>
+<section id="introdução" class="level2">
+<h2 class="anchored" data-anchor-id="introdução">Introdução</h2>
+<p>A análise de sobrevivência é uma técnica estatística utilizada para investigar o tempo até que determinado evento ocorra. No contexto da dívida ativa brasileira, essa análise pode ser aplicada para compreender os períodos de tempo nos quais os créditos saem desse estado. Dessa forma, é possível identificar fatores que influenciam a probabilidade de um crédito ser quitado ou regularizado, permitindo uma análise mais detalhada e estratégica sobre a gestão da dívida ativa.</p>
+<p>Neste estudo, utilizamos dados provenientes dos dados abertos da Procuradoria-Geral da Fazenda Nacional (PGFN) para realizar uma análise de sobrevivência dos créditos ativos em março de 2022, comparando-os com a situação em março de 2023. Foram analisados diferentes grupos de créditos, considerando variáveis como tipo de pessoa (física ou jurídica), indicação de ajuizamento, tipo de receita, clusters de valores consolidados, situação da inscrição e tipo de situação da inscrição. Para a análise, usamos uma amostra de 4,156 milhões de créditos inscritos em dívida ativa, sendo 3,333 milhões ainda presentes na base em março de 2023 e 823 mil já excluídos. Essa abordagem comparativa nos permite identificar padrões e tendências, auxiliando na compreensão dos fatores que influenciam a permanência ou resolução dos créditos na dívida ativa brasileira.</p>
+</section>
+<section id="análise-por-cluster-de-valores-consolidado" class="level2">
+<h2 class="anchored" data-anchor-id="análise-por-cluster-de-valores-consolidado">Análise por cluster de valores consolidado</h2>
+<p>Os valores consolidados referem-se ao débito na data em que foi feita a extração do dado e engloba os acréscimos legais. O domínio desses valores é imenso, partindo de casos isolados na casa de centenas de reais a bilhões de reais.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-2_e7152570a3b2462341e0719804be3798">
+
+</div>
+<p>As estatísticas descritivas de valor consolidado são as que seguem:</p>
+<p>valor mínimo: 0.01</p>
+<p>média: 1.4883142^{5}</p>
+<p>mediana: 6980.495</p>
+<p>valor máximo: 6.8089671^{9}</p>
+<p>A figura abaixo, onde o eixo horizontal está representado na escala logaritmica, mostra a distribuição dos dados.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-4_172f134309a900e9a7d520da5959232a">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Como se vê no gráfico acima, a frequência de créditos ativos com valores consolidados é muito baixa até o valor de aproximadamente 1000 reais quando há um pico na densidade, com mais um aumento até chegar na mediana representada pela linha vermelha vertical e em seguida uma gradual redução até o valor de aproximadamente um milhão de reais. A partir desse ponto há novamente baixa frequência até o valor máximo.</p>
+<p>Para fazer uma análise por grupos de créditos baseados em valores consolidados, recorremos à técnica de clusterização. Utilizando critérios estatísticos e de organização da informação optamos por utilizar o modelo gerado para quatro grupos em ordem crescente de valores consolidados: 1, 2, 3, 4. Abaixo alguns gráficos e tabelas que descrevem os grupos.</p>
+<p>Começamos por um quadro resumo das estatísticas descritivas</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-6_2bb77773f210b5602822feff6e27318d">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 x 6
+  cluster quantidade      mínimo      máximo      média   mediana
+  &lt;chr&gt;        &lt;int&gt;       &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;     &lt;dbl&gt;
+1 1          4045145        0.01     522953.     30222.     6583.
+2 2            93510   522959.      3537409.   1198115.   944732.
+3 3            16103  3537445.     30298946.   8835778.  6564912.
+4 4             2004 30300870.   6808967071. 120801649. 55256807.</code></pre>
+</div>
+</div>
+<p>Agora um gráfico de densidade</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-8_d65803978706bf801419d19bd1469054">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>A importância de cada grupo pelo total de valor consolidado</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-10_16d790cc3563881de06875946ec537ba">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Como se vê no gráfico acima o cluster 4 mesmo tendo bem menos ocorrências do que os outros clusters, possui um valor consolidado agregado bem superior aos demais clusters.</p>
+<p>Com essa descrição dos dados podemos passar para as análises de sobrevivência por cluster de valores consolidado. Veja a tabela abaixo</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-12_0034f8be48cfbfbc19cf62e82018f2eb">
+
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-14_dd2258a11389fc928407d30f7d8bd2d9">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+survdiff(formula = sobrevivencia ~ cluster, data = dados_longitudinais_trabalho_full)
+
+                N Observed Expected (O-E)^2/E (O-E)^2/V
+cluster=1 4045145   808720   784429       752     15972
+cluster=2   93510    13308    32161     11051     11615
+cluster=3   16103     1522     6277      3602      3659
+cluster=4    2004       78      762       614       619
+
+ Chisq= 16188  on 3 degrees of freedom, p= &lt;2e-16 </code></pre>
+</div>
+</div>
+<p>No quadro acima o resultado indica que existem diferenças significativas nas taxas de sobrevivência entre os grupos identificados pelo “cluster”, com base no teste qui-quadrado. Isso sugere que o fator de agrupamento influencia a sobrevivência dos indivíduos, e há uma associação estatisticamente significativa entre o agrupamento e o tempo de sobrevivência.</p>
+<p>Observando principalmente as duas últimas colunas do quadro, os clusters 1 e 2 são so que mais se desviam entre o tempo de sobrevivência esperado por um modelo e o tempo efetviamente observado. Como os valores para esses dois grupos são positivos há uma forte influência dos dois grupos para o aumento da expectativa de sobrevivência dos créditos ativos. O contrário, porém, em menor grau, se observa nos clusters 3 e 4.</p>
+<p>Agora uma tabela e um gráfico que mostras a evolução da probabilidade de sobrevivência.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-16_e1f29ec9ff7f216226a8f3b1ee6adbcb">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = sobrevivencia ~ cluster, data = dados_longitudinais_trabalho_full)
+
+                n events median 0.95LCL 0.95UCL
+cluster=1 4045145 808720    218     218     218
+cluster=2   93510  13308    297     294     299
+cluster=3   16103   1522    319     315     324
+cluster=4    2004     78     NA     343      NA</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-18_42dc7ee589f6a7d56ba983b61feedb88">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Pela tabela e pelo gráfico fica fácil perceber que o tempo para se alcançar 50% de probabilidade de sobrevivência é bem menor para o grupo de menores valores consolidados do que os demais grupos.</p>
+</section>
+<section id="análise-por-tipo-de-pessoa-física-ou-jurídica" class="level2">
+<h2 class="anchored" data-anchor-id="análise-por-tipo-de-pessoa-física-ou-jurídica">Análise por tipo de pessoa: Física ou jurídica</h2>
+<p>O poder econômico e de barbanha das pessoas jurídicas bem maior do que os das pessoas físicas podem influenciar de forma importante o tempo de sobrevivência de créditos ativos. Dessa forma faz-se necessário análises dos dados por esse corte. Veja as tabelas e os gráficos.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-20_04a166967091197dcce0882a2d960ee8">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 x 6
+  tipo_pessoa     quantidade mínimo      máximo   média mediana
+  &lt;chr&gt;                &lt;int&gt;  &lt;dbl&gt;       &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+1 Pessoa física       767181   3.13 1218434321.  56660.   5891.
+2 Pessoa jurídica    3389581   0.01 6808967071. 169693.   7344.</code></pre>
+</div>
+</div>
+<p>O gráfico de densidade para o tipo de pessoa</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-22_5ca85400acb0dda295195a47ee39b925">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Quem mais contribui no valor consolidado total</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-24_7b01e780797e5fac8cfc3cce30bda047">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Pelo gráfico acima percebe-se que apesar do valor da mediana entre as duas classes não ser tão diferente, os valores extremos de pessoa jurídica fazem com que o total do valor consolidado para essa classe seja muito superior à pessoa física.</p>
+<p>O achado acima aliado ao fato já constatado que os créditos de maiores valores consolidados estão associados a maior tempo de sobrevivência, é possível anteciparmos que os créditos de pessoas jurídicas apresentem taxas de sobrevivência estatisticamente diferentes e superiores quando comparadas com as das pessoas físicas. Antes de irmos à análise de sobrevivência, um pouco de estatística descritiva da combinação de tipo de pessoa e cluster</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-26_2e4336919dbef049f1a7b97684d48245">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-28_19b5b03ff50e8fa5fc04b807be32290a">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-30_37a43eb7b84f47ff4a273b083916e072">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+survdiff(formula = sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho_full)
+
+                                  N Observed Expected (O-E)^2/E (O-E)^2/V
+tipo_pessoa=Pessoa física    767181   155620   127671      6119      7480
+tipo_pessoa=Pessoa jurídica 3389581   668008   695957      1122      7480
+
+ Chisq= 7480  on 1 degrees of freedom, p= &lt;2e-16 </code></pre>
+</div>
+</div>
+<p>Como se esperava, o teste chi-quadrado revela que há diferenças estatisticamente significantes nos dois grupos. A tabela e o gráfico em seguida revela como isso se dá ao longo do tempo</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-32_8236d987a86b537891b42122c2f556eb">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho_full)
+
+                                  n events median 0.95LCL 0.95UCL
+tipo_pessoa=Pessoa física    767181 155620    192     189     194
+tipo_pessoa=Pessoa jurídica 3389581 668008    224     224     225</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-34_1416b6960e1a2c0782ab69b087af1acc">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>O gráfico e a tabela demostram a diferença entre os tempos para 50% de probabilidade de sobrevivência. São 22 meses a mais para Pessoa Jurídica. É possível que esses tempos sejam maiores considerando extratos por grupos de valor consolidado. Vamos ao próximo gráfico.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-36_cee64e86c55e3e13d1323d418cef9a66">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = sobrevivencia ~ tipo_pessoa + cluster, data = dados_longitudinais_trabalho_full)
+
+                                             n events median 0.95LCL 0.95UCL
+tipo_pessoa=Pessoa física, cluster=1    759076 154033    187     184     189
+tipo_pessoa=Pessoa física, cluster=2      6624   1369    227     225     233
+tipo_pessoa=Pessoa física, cluster=3      1377    211    241     237     256
+tipo_pessoa=Pessoa física, cluster=4       104      7     NA      NA      NA
+tipo_pessoa=Pessoa jurídica, cluster=1 3286069 654687    224     223     224
+tipo_pessoa=Pessoa jurídica, cluster=2   86886  11939    299     298     305
+tipo_pessoa=Pessoa jurídica, cluster=3   14726   1311    321     317     325
+tipo_pessoa=Pessoa jurídica, cluster=4    1900     71     NA     343      NA</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-38_fb78786984e7628b6b2946baea4b6799">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="análise-por-crédito-ajuizado" class="level2">
+<h2 class="anchored" data-anchor-id="análise-por-crédito-ajuizado">Análise por crédito ajuizado</h2>
+<p>Os créditos podem em algum momento ser ajuizado e isso leva os prazos a dependerem dos processos mais longos e complexos desse tipo de trâmite. A base de dados que trabalhamos tem indicação para cada crédito informado se foi ou não ajuizado. Vamos analisar essa categoria. Começando pelas estatísticas descritivas.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-40_6c99ffb1d49849ee987eebd6f9e433aa">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 x 6
+  indicador_ajuizado quantidade mínimo      máximo   média mediana
+  &lt;chr&gt;                   &lt;int&gt;  &lt;dbl&gt;       &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+1 NAO                   2852531   0.02 2166742899.  42278.   4514.
+2 SIM                   1304231   0.01 6808967071. 381878.  23679.</code></pre>
+</div>
+</div>
+<p>Como os valores se distribuem para as duas classes.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-42_de2fd0b9549087456e930c824d663d38">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>A contribuição para o valor consolidado total</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-44_5eeec4b8d6c01cda602f24d38bd96598">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Créditos ajuizados são minoria em quantidade mas quando se percebe a soma dos valores consolidados vê-se uma barra horizontal de comprimento quase cinco vezes maior do que os créditos não ajuizados. O mais provável é que os créditos ajuizados estejam associados com mais frequência em termos proporicionais aos clusters de valores consolidados maiores e a pessoas jurídicas. Vamos às estatísticas descritivas dessas combinações de variáveis.</p>
+<p>Começando comparando as quantidades de créditos.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-46_e78b536808e1a7e5afb382d9fdc9ef53">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-46-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>E agora os valores consolidados totais</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-48_9ccd7f62308049ba9663514503a3fa9f">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-48-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Vamos à análise de sobrevivência</p>
+<p>Primeiro a verificação se os grupos formados pelos créditos ajuizados e não ajuizados são estatisticamente diferentes</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-50_24488d785c98b53c0bd1164f2fd2df3e">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+survdiff(formula = sobrevivencia ~ indicador_ajuizado, data = dados_longitudinais_trabalho_full)
+
+                             N Observed Expected (O-E)^2/E (O-E)^2/V
+indicador_ajuizado=NAO 2852531   440020   220614    218206    406049
+indicador_ajuizado=SIM 1304231   383608   603014     79831    406049
+
+ Chisq= 406049  on 1 degrees of freedom, p= &lt;2e-16 </code></pre>
+</div>
+</div>
+<p>Novamente temos o teste de chi-quadrado demonstrando diferenças entre os grupos em relação à sobrevivência dos créditos.</p>
+<p>Agora ao longo do tempo</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-52_7d1c3050086cc58b23b95ba7eca0f23e">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = sobrevivencia ~ indicador_ajuizado, data = dados_longitudinais_trabalho_full)
+
+                             n events median 0.95LCL 0.95UCL
+indicador_ajuizado=NAO 2852531 440020    109     109     109
+indicador_ajuizado=SIM 1304231 383608    250     250     251</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-54_c27dd24666ee412880fdaa54e4872c94">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-54-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>A tabela e o gráfico não deixam dúvida da imensa diferença de sobrevivência dos créditos ajuizados. È mais que o dobro o número de meses relativo à marca de 50% de probabilidade de sobrevivência entre os dois grupos. Aqui de novo há uma aposta que o desdobramento da análise somando às categorias tipo de pessoa e clusters de valores consolidados vão indicar que combinações que envolvam pessoas jurídicas, processos ajuizados e altos valores estarão associados a maiores tempos de sobrevivência. Vamos ás tabelas e gráficos</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-56_fd57fe4e7de266918bbecedc393c23b1">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = sobrevivencia ~ indicador_ajuizado + tipo_pessoa + 
+    cluster, data = dados_longitudinais_trabalho_full)
+
+                                                                     n events
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=1  611257 108105
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=2    1879    169
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=3     295     15
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=4      19      4
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=1 2218373 330216
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=2   18233   1375
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=3    2255    128
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=4     220      8
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=1  147819  45928
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=2    4745   1200
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=3    1082    196
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=4      85      3
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=1 1067696 324471
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=2   68653  10564
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=3   12471   1183
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=4    1680     63
+                                                               median 0.95LCL
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=1  193.9   186.5
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=2   79.8    69.9
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=3  212.0   115.3
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=4     NA    33.4
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=1   79.9    79.9
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=2  208.8   171.6
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=3  277.5   250.0
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=4     NA      NA
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=1  214.0   212.2
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=2  229.7   225.5
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=3  242.8   238.6
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=4     NA      NA
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=1  252.1   251.4
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=2  304.9   298.8
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=3  320.7   318.4
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=4     NA   343.0
+                                                               0.95UCL
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=1   193.9
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=2   144.2
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=3      NA
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa física  , cluster=4      NA
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=1    80.1
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=2   272.6
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=3      NA
+indicador_ajuizado=NAO, tipo_pessoa=Pessoa jurídica, cluster=4      NA
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=1   214.0
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=2   236.3
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=3   257.6
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa física  , cluster=4      NA
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=1   252.1
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=2   306.5
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=3   324.5
+indicador_ajuizado=SIM, tipo_pessoa=Pessoa jurídica, cluster=4      NA</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-58_61ff3bd7be89b04e6c91ae721f2e7add">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-58-1.png" class="img-fluid" width="960"></p>
+</div>
+</div>
+<p>A tabela e o gráfico acima trazem os resultados que espéravamos com a precisão das medidas. Duas combinações que merece destaque são as que se referem à linha do cluster 1. Oberva-se nesses casos que há uma grande diferença entre os tempos de PJ e PF na avaliação dos créditos ajuizados. Isso não ocorre no caso de PF. Mais ainda, no caso de PJ, o tempo para alcançar o 50% de sobrevivência é bem maior do que o de PJ, o que não combina com o que normalmente se espera na comparação dessas duas classes. Possivelmente o tipo da receita do principal associado a cada crédito pode explicar esse fenômeno. Nesse caso, é provável que haja algum tipo de receita de pessoa jurídica que não traz muita margem para ajuizamento e que afeta principalmente os créditos de menor valor.</p>
+</section>
+<section id="análise-por-tipo-de-receita-do-principal" class="level2">
+<h2 class="anchored" data-anchor-id="análise-por-tipo-de-receita-do-principal">Análise por tipo de receita do principal</h2>
+<p>A sessão anterior terminou com a sugestão de que o fenômeno de rápida exclusão de créditos associados ao cluster 1, pessoa jurídica não ajuizada pode estar associada ao tipo de receita do principal. Essa hipótese é motivo suficente para analisarmos com mais cuidado essa variável e descobrirmos suas características tanto da estatística descritiva como da análise de sobrevivência.</p>
+<p>Começamos pela estatística descritiva. Nesse caso como há vários tipos de receita do principal, o nosso primeiro cuidado é identificar os mais relevantes para a análise. Dessa forma através de uma tabela de frequência identificamos os tipos de receita mais frequentes e cujas frequências acumuladas aproximem de 80%.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-60_53c1ec0d606e9cdb2f952aaaa9e481cb">
+<div class="cell-output cell-output-stdout">
+<pre><code>                                           n    % val% %cum val%cum
+DIV ATIVA-SIMPLES NACIONAL            742233 17.9 17.9 17.9    17.9
+Receita da dívida ativa - IRPF        500180 12.0 12.0 29.9    29.9
+Receita da dívida ativa - IRPJ        458271 11.0 11.0 40.9    40.9
+Receita da dívida ativa - COFINS      444515 10.7 10.7 51.6    51.6
+Receita da dívida ativa - CSLL        438522 10.5 10.5 62.2    62.2
+Receita da dívida ativa - PIS         287447  6.9  6.9 69.1    69.1
+R D Ativa - Multa Isolada             225676  5.4  5.4 74.5    74.5
+Receita da dívida ativa - Multa - CLT 209566  5.0  5.0 79.5    79.5</code></pre>
+</div>
+</div>
+<p>Pela tabela de frequência concluímos que exsitem oito tipos de receita do principal mais frequentes que ao se somar suas frequências alcanca-se o valor de aproximadamente 89%. São esses oito tipos que vamos aprofundar nos próximos gráficos e tabelas.</p>
+<p>Começando pelas estatísticas descritivas básicas:</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-62_bcc592433e8fff01cdcb272fdbcc80bc">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 x 6
+  receita_principal                     quantidade mínimo  máximo  média mediana
+  &lt;chr&gt;                                      &lt;int&gt;  &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;
+1 DIV ATIVA-SIMPLES NACIONAL                742233  11.0   3.71e7 5.19e4   8363.
+2 R D Ativa - Multa Isolada                 225676  24.0   8.55e8 9.80e4   2412.
+3 Receita da dívida ativa - COFINS          444515   1.63  5.82e9 2.92e5  15573.
+4 Receita da dívida ativa - CSLL            438522   0.02  2.45e9 1.38e5   8629.
+5 Receita da dívida ativa - IRPF            500180   9.43  1.22e9 5.68e4   7437.
+6 Receita da dívida ativa - IRPJ            458271   0.02  6.81e9 2.92e5  11499.
+7 Receita da dívida ativa - Multa - CLT     209566  40.2   2.13e7 2.09e4   5217.
+8 Receita da dívida ativa - PIS             287447   2.44  2.17e9 1.07e5   6763.</code></pre>
+</div>
+</div>
+<p>Agora o ranking para o valor consolidado total</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-64_705a80fbcace833c93dd24ac3968c287">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-64-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Agora como se dividem essas classes na observação de ajuizamento e clusters.</p>
+<p>Vamos observar primeiro as quantidades</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-66_e4fb5eaa8fefd19e43cb51dc3c5adaaf">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-66-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Ao observarmos as quantidades em valores absolutos, considerando ainda que os gráficos para essa situação estão com escala livre, verificamos a grande importância do Simples para o cluster 1. É possível ainda visualizar que esse tipo de receita tem ainda alguma relevância para o cluster 2, e é praticamente ausente nos demais clusters.</p>
+<p>Já quando observamos a distribuição proporcional das quantidades, fica fácil avaliar que a quantidade de créditos ajuizados só não é importante para o cluster 1, o que não ocorre para os demais clusters, para qualquer um dos tipos de receita. Mais especificamente para o Simples, é notório que esse quadro é bem mais acentuado.</p>
+<p>Agora analisamos os valores totais consolidados</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-68_b4288b2f8a07352eb3a80bf259ab4e61">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-68-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Quando observamos os valores totais, percebemos a importância dos lançamentos ajuizados mesmo para o cluster 1 onde a quntidade desse tipo de lançamento é bem inferior do que a classe dos não ajuizados. A úncia exceção significativa para essa regra refere-se aos tributos de Simples nacional onde os valores consolidados de não ajuizados são maiores do que os valores ajuizados.</p>
+<p>Agora vamos às análises de sobrevivência. Começando com a comparação entre as classes do grupo</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-70_5c84b413aef7aefc03a876253d42285a">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+survdiff(formula = sobrevivencia_receita_principal ~ receita_principal, 
+    data = trabalho_receita_principal)
+
+                                                             N Observed
+receita_principal=DIV ATIVA-SIMPLES NACIONAL            742233   134611
+receita_principal=R D Ativa - Multa Isolada             225676    41652
+receita_principal=Receita da dívida ativa - COFINS      444515    92914
+receita_principal=Receita da dívida ativa - CSLL        438522    89146
+receita_principal=Receita da dívida ativa - IRPF        500180   106365
+receita_principal=Receita da dívida ativa - IRPJ        458271    91798
+receita_principal=Receita da dívida ativa - Multa - CLT 209566    51422
+receita_principal=Receita da dívida ativa - PIS         287447    60853
+                                                        Expected (O-E)^2/E
+receita_principal=DIV ATIVA-SIMPLES NACIONAL               53509    122922
+receita_principal=R D Ativa - Multa Isolada                20822     20839
+receita_principal=Receita da dívida ativa - COFINS        126024      8699
+receita_principal=Receita da dívida ativa - CSLL          113149      5092
+receita_principal=Receita da dívida ativa - IRPF           82801      6706
+receita_principal=Receita da dívida ativa - IRPJ          120745      6940
+receita_principal=Receita da dívida ativa - Multa - CLT    67795      3954
+receita_principal=Receita da dívida ativa - PIS            83916      6338
+                                                        (O-E)^2/V
+receita_principal=DIV ATIVA-SIMPLES NACIONAL               146340
+receita_principal=R D Ativa - Multa Isolada                 21880
+receita_principal=Receita da dívida ativa - COFINS          10948
+receita_principal=Receita da dívida ativa - CSLL             6242
+receita_principal=Receita da dívida ativa - IRPF             7902
+receita_principal=Receita da dívida ativa - IRPJ             8665
+receita_principal=Receita da dívida ativa - Multa - CLT      4474
+receita_principal=Receita da dívida ativa - PIS              7356
+
+ Chisq= 206089  on 7 degrees of freedom, p= &lt;2e-16 </code></pre>
+</div>
+</div>
+<p>O teste chi-quadrado indica que os grupos têm comportamento diferente na sobrevivência dos créditos ativos. Mais importante do que isso, o quadro acima indica a forte discrepância entre o esperado de um modelo de equilíbrio e o que foi observado para a classe que corresponde aos créditos de receita para o simples nacional. Nesse caso, favorecendo uma sobrevivência bastante inferior ao esperado quando comparado com as demais classes.</p>
+<p>Agora vamos às expectavias medianas de sobrevivência.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-72_e36b4bcee852f9ea6d58f976d8bac18a">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = sobrevivencia_receita_principal ~ receita_principal, 
+    data = trabalho_receita_principal)
+
+                                                             n events median
+receita_principal=DIV ATIVA-SIMPLES NACIONAL            742233 134611   80.1
+receita_principal=R D Ativa - Multa Isolada             225676  41652  161.4
+receita_principal=Receita da dívida ativa - COFINS      444515  92914  243.2
+receita_principal=Receita da dívida ativa - CSLL        438522  89146  246.1
+receita_principal=Receita da dívida ativa - IRPF        500180 106365  154.6
+receita_principal=Receita da dívida ativa - IRPJ        458271  91798  246.1
+receita_principal=Receita da dívida ativa - Multa - CLT 209566  51422  237.0
+receita_principal=Receita da dívida ativa - PIS         287447  60853  240.5
+                                                        0.95LCL 0.95UCL
+receita_principal=DIV ATIVA-SIMPLES NACIONAL               80.1    80.1
+receita_principal=R D Ativa - Multa Isolada               155.8   168.5
+receita_principal=Receita da dívida ativa - COFINS        243.2   244.4
+receita_principal=Receita da dívida ativa - CSLL          246.1   246.2
+receita_principal=Receita da dívida ativa - IRPF          150.3   159.8
+receita_principal=Receita da dívida ativa - IRPJ          246.1   248.9
+receita_principal=Receita da dívida ativa - Multa - CLT   235.4   238.6
+receita_principal=Receita da dívida ativa - PIS           240.5   241.6</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-74_1ff050fcdb627674689bf9088ed82fec">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-74-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Como já estava se desenhando desde o começo da análise, a probabilidade de sobrevivência mediana está associada a um número de meses que corresponde à metade do que é observado na classe que vem logoa seguir e corresponde a 1/3 do tempo observado nas classe mais longevas: CSLL e IRPJ.</p>
+<p>Para confirmar a influência dos valores consolidados na definição da lacuna de sobrevivência de pessoa jurídica no cluster 1, vamos agora à análise que cruza as categorias de tipo de receita e cluster.</p>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-76_f85192a6317750069d13320bf5ef0a44">
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = sobrevivencia_receita_principal ~ cluster + 
+    receita_principal + indicador_ajuizado, data = trabalho_receita_principal)
+
+                                                                                                n
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO 687114
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM  41297
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO 196597
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM  26195
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO 226816
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM 189183
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO 243395
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM 186223
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO 381401
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM 114652
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO 253989
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM 186187
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO 107021
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM 101629
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO 136063
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM 143940
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO   5103
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM   8670
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO    901
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM   1410
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO   4336
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM  19329
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO   1033
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   6345
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO    728
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM   2278
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO   2305
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM  12234
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO    187
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM    683
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO    910
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM   5554
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO     15
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM     33
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO    116
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM    337
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO    602
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   3855
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO    154
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   1180
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO    189
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM    860
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO    383
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   2629
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO     12
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM     34
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO     93
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM    826
+cluster=4, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      1
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO     23
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM     97
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO     38
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM    356
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO     22
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM    170
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO      6
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM     66
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO     52
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM    492
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      3
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM     58
+                                                                                           events
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO 120651
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM  12597
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO  33147
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM   8068
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO  26905
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM  61815
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO  29343
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM  58770
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO  69270
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM  36226
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO  30770
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM  58714
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO  21037
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM  30267
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO  15275
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM  44729
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO    384
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM    977
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO     73
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM    324
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO    381
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   3411
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO     64
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM    889
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO     68
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM    626
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO    163
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   1816
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO     18
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM     91
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO     47
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM    752
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      1
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM      1
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO      2
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM     33
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO     28
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM    361
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO      6
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM     68
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO     11
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM    162
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO     30
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM    288
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO      3
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM      6
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      2
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM     45
+cluster=4, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      0
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO      2
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM      3
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO      2
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM     11
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO      0
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM      6
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO      0
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM      2
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO      1
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM     16
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      0
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM      3
+                                                                                           median
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO   69.5
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM  125.4
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO   63.3
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM  200.9
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO  153.6
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM  251.7
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO  171.6
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM  282.0
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO  130.4
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM  193.9
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO  166.2
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM  280.2
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO  113.7
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM  258.1
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO  200.4
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM  243.2
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO  104.6
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM  122.2
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO   66.6
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM  196.6
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO  210.6
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM  298.8
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO     NA
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM  288.9
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO     NA
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM  240.2
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO  315.2
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM  292.4
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO  133.2
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM  292.4
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO     NA
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM  310.0
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO     NA
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM     NA
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO     NA
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM  298.8
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO     NA
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM  315.4
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO  250.0
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM  315.4
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO  237.7
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM  246.5
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO  252.4
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM  307.8
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO  148.4
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM  311.7
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO     NA
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM  350.8
+cluster=4, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO     NA
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO     NA
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM     NA
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO     NA
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM     NA
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO     NA
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM  300.2
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO     NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM     NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO     NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM     NA
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO     NA
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM     NA
+                                                                                           0.95LCL
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO    69.5
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM   125.4
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO    63.3
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM   200.9
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO   144.5
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   249.1
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO   165.7
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   281.1
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO   127.7
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM   193.9
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO   153.6
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   274.7
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO   110.7
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM   256.8
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO   188.9
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM   243.2
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO   104.6
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM   122.2
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO    64.2
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM   190.1
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO   162.1
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   297.9
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO   208.8
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   285.5
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO    69.6
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM   232.6
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO   213.1
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   287.5
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO   110.5
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM   260.8
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO   260.2
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM   308.5
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM      NA
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM   261.6
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO   238.6
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   310.0
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO   168.0
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   300.2
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO    67.7
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM   239.3
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO   252.4
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   300.2
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO   120.2
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM   171.3
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM   328.5
+cluster=4, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO    62.2
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO   103.5
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   308.5
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   291.9
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   315.9
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM   247.6
+                                                                                           0.95UCL
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO    69.5
+cluster=1, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM   125.4
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO    63.3
+cluster=1, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM   200.9
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO   162.7
+cluster=1, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   254.2
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO   171.6
+cluster=1, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   282.5
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO   133.9
+cluster=1, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM   193.9
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO   171.6
+cluster=1, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   282.0
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO   116.5
+cluster=1, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM   259.3
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO   217.9
+cluster=1, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM   243.2
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      NA
+cluster=2, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM   122.2
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO    69.3
+cluster=2, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM   201.2
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO      NA
+cluster=2, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   306.5
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO      NA
+cluster=2, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM   295.2
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO      NA
+cluster=2, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM   251.2
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO      NA
+cluster=2, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   297.0
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO      NA
+cluster=2, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM   317.3
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      NA
+cluster=2, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM   315.4
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=SIM      NA
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM      NA
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM   323.6
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM      NA
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM   274.9
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM   317.1
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=Receita da dívida ativa - Multa - CLT, indicador_ajuizado=SIM      NA
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      NA
+cluster=3, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=DIV ATIVA-SIMPLES NACIONAL           , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=R D Ativa - Multa Isolada            , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - COFINS     , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - CSLL       , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPF       , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - IRPJ       , indicador_ajuizado=SIM      NA
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=NAO      NA
+cluster=4, receita_principal=Receita da dívida ativa - PIS        , indicador_ajuizado=SIM      NA</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="index_cache/html/unnamed-chunk-78_332f79693f2793399c6be0293686fe2f">
+<div class="cell-output-display">
+<p><img src="index_files/figure-html/unnamed-chunk-78-1.png" class="img-fluid" width="960"></p>
+</div>
+</div>
+<p>Com a tabela e gráfico acima, confirma-se que os créditos relacionados ao Simples nacional estão associados ao fenômeno da redução da expetativa mediana de sobrevivência da combinação de pessoa jurídica com o cluster 1, principalmente quado se foca nos lançamentos ajuizados.</p>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
