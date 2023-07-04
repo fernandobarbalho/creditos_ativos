@@ -165,3 +165,9 @@ saveRDS(dados_longitudinais_trabalho_full,"dados_longitudinais_trabalho_full.RDS
 dados_longitudinais_trabalho_full %>%
   group_by(status) %>%
   summarise(n())
+
+
+km <- survfit(Surv(time = diferenca_max_meses,event = status) ~ 1,
+              data = dados_longitudinais_trabalho_full)
+
+summary(km)

@@ -1,0 +1,91 @@
+---
+title: "Análise de sobrevivência de créditos ativos"
+author: "Fernando Barbalho"
+format: pptx
+editor: visual
+execute: 
+  cache: true
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+# Carregue os pacotes
+library(survival)
+library(survminer)
+library(questionr)
+library(cluster)
+library(tidyverse)
+library(colorspace)
+library(patchwork)
+library(forcats)
+library(kableExtra)
+
+#Carrega a base de dados longitudinal
+dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
+
+dados_longitudinais_trabalho_full$diferenca_max_meses<- round(dados_longitudinais_trabalho_full,0)
+```
+
+## Análise de Sobrevivência na Dívida Ativa Brasileira: Compreendendo Padrões e Tendências
+
+-   Análise de sobrevivência: técnica estatística para investigar o tempo até que um evento ocorra.
+
+-   Aplicação da análise de sobrevivência na dívida ativa brasileira.
+
+-   Compreensão dos períodos de tempo nos quais os créditos saem do estado de dívida ativa.
+
+-   Identificação dos fatores que influenciam a probabilidade de quitação ou regularização de um crédito.
+
+-   Utilização de dados abertos da PGFN para realizar a análise de sobrevivência.
+
+-   Comparação dos créditos ativos em março de 2022 e março de 2023.
+
+-   Análise de diferentes grupos de créditos com base em variáveis como tipo de pessoa, indicação de ajuizamento, tipo de receita, clusters de valores consolidados, situação da inscrição e tipo de situação da inscrição.
+
+-   Amostra de 4,156 milhões de créditos inscritos em dívida ativa.
+
+-   3,333 milhões de créditos ainda presentes na base em março de 2023.
+
+-   823 mil créditos já excluídos.
+
+-   Identificação de padrões e tendências na permanência ou resolução dos créditos na dívida ativa brasileira.
+
+## Principais achados
+
+-   Grupos gerado a partir de técnicas estatísticas indicam que 0,04% das inscrições correspondem a 39,1% do valor total consolidado
+
+-   75% das inscrições de valores consolidados mais elevados sobrevivem mais de 300 meses
+
+-   Os grupos associados a valores consolidados elevados têm probabilidades de sobrevivência associados a tempos bem maiores do que os de baixo valores consolidados
+
+-   Inscrições de pessoas jurídicas sobrevivem 32 meses a mais na mediana do que as pessoas físicas
+
+-   Inscrições ajuizadas estão associadas a valores elevados e também a tempos medianos de sobrevivência 2,29 vezes superiores em relação a inscrições não ajuizadas
+
+-   Pelo volume de transações, as inscrições associadas ao Simples Nacional são importantes para identificação de padrões associados a tempos de resolução inferiores aos demais tipos de receita do principal
+
+## Análise por cluster de valores consolidado
+
+When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r }
+library(knitr)
+library(kableExtra)
+
+tabela_valores <- dados_longitudinais_trabalho_full %>%
+  group_by(cluster) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  )
+
+kable(tabela_valores, caption = "Resumo dos Valores Consolidados por Cluster") %>%
+  kable_styling(full_width = FALSE) %>%
+  add_header_above(c(" " = 1, "Quantidade" = 1, "Valores Consolidados" = 4))
+
+```

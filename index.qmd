@@ -20,6 +20,7 @@ library(tidyverse)
 library(colorspace)
 library(patchwork)
 library(forcats)
+library(kableExtra)
 
 #Carrega a base de dados longitudinal
 dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
@@ -720,11 +721,30 @@ Como já estava se desenhando desde o começo da análise, a probabilidade de so
 
 Para confirmar a influência dos valores consolidados na definição da lacuna de sobrevivência de pessoa jurídica no cluster 1, vamos agora à análise que cruza as categorias de tipo de receita e cluster.
 
-```{r}
+```{r }
 # Ajuste os modelos de sobrevivência separadamente para cada grupo
 ajuste_receita_principal_cluster <- survfit(sobrevivencia_receita_principal ~ cluster + receita_principal +indicador_ajuizado, data = trabalho_receita_principal)
 
 ajuste_receita_principal_cluster
+
+# # Capturar o output como uma string
+# output <- capture.output(print(ajuste_receita_principal_cluster))
+# 
+# # Quebra a string de saída em linhas
+# map_dfr (4:127,  function(linha){
+#   tibble(resultado=strsplit(output, "\n")[[linha]])
+#   } )
+# lines <- 
+# 
+# # Remove o prefixo "Call:" da primeira linha
+# lines[1] <- gsub("^Call: ", "", lines[1])
+# 
+# # Converte a tabela em um data frame
+# df <- read.table(text = lines, header = TRUE, stringsAsFactors = FALSE)
+# 
+# # Gera a tabela formatada
+# kable(df, align = "c", format = "html") %>%
+#   kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
 ```
 
