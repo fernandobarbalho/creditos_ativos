@@ -20,12 +20,11 @@ library(tidyverse)
 library(colorspace)
 library(patchwork)
 library(forcats)
-library(kableExtra)
 
 #Carrega a base de dados longitudinal
 dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
 
-dados_longitudinais_trabalho_full$diferenca_max_meses<- round(dados_longitudinais_trabalho_full,0)
+dados_longitudinais_trabalho_full$diferenca_max_meses<- round(dados_longitudinais_trabalho_full$diferenca_max_meses,0)
 ```
 
 ## Análise de Sobrevivência na Dívida Ativa Brasileira: Compreendendo Padrões e Tendências
@@ -71,9 +70,41 @@ dados_longitudinais_trabalho_full$diferenca_max_meses<- round(dados_longitudinai
 When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
 
 ```{r }
-library(knitr)
-library(kableExtra)
 
+
+# tabela_valores <- dados_longitudinais_trabalho_full %>%
+#   group_by(cluster) %>%
+#   summarise(
+#     quantidade = n(),
+#     mínimo = min(valor_consolidado),
+#     máximo = max(valor_consolidado),
+#     média = mean(valor_consolidado),
+#     mediana = median(valor_consolidado)
+#   )
+# 
+# # Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
+# 
+# tabela_valores$quantidade <- format(tabela_valores$quantidade,  big.mark = ".")
+# 
+# tabela_valores$mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
+# tabela_valores$máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
+# tabela_valores$média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
+# tabela_valores$mediana <- format(tabela_valores$mediana, decimal.mark = ",", big.mark = ".")
+# 
+# # Renomear as colunas
+# colnames(tabela_valores) <- c("Cluster", "Quantidade", "Mínimo", "Máximo", "Média", "Mediana")
+# 
+# kable(tabela_valores[,  c("Cluster", "Quantidade", "Mínimo", "Máximo", "Média", "Mediana")],
+#       caption = "Resumo dos Valores Consolidados por Cluster", align=rep('r', 6)) %>%
+#   kable_styling(full_width = FALSE) %>%
+#   add_header_above(c(" " = 1, "Quantidade" = 1, "Valores Consolidados em R$" = 4))
+
+
+library(flextable)
+#library(officer)
+#library(magrittr)
+
+# Criação da tabela
 tabela_valores <- dados_longitudinais_trabalho_full %>%
   group_by(cluster) %>%
   summarise(
@@ -84,8 +115,35 @@ tabela_valores <- dados_longitudinais_trabalho_full %>%
     mediana = median(valor_consolidado)
   )
 
-kable(tabela_valores, caption = "Resumo dos Valores Consolidados por Cluster") %>%
-  kable_styling(full_width = FALSE) %>%
-  add_header_above(c(" " = 1, "Quantidade" = 1, "Valores Consolidados" = 4))
+# Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
+tabela_valores$formatted_mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_mediana <- format(tabela_valores$mediana, decimal.mark = ",", big.mark = ".")
 
+# Criação do objeto flextable
+flex_tab <- flextable(tabela_valores[, c("cluster", "quantidade", "formatted_mínimo", "formatted_máximo", "formatted_média", "formatted_mediana")])
+
+# Customização do estilo da tabela
+flex_tab <- flex_tab %>%
+  set_header_labels(
+    cluster = "Cluster",
+    quantidade = "Quantidade",
+    formatted_mínimo = "Mínimo",
+    formatted_máximo = "Máximo",
+    formatted_média = "Média",
+    formatted_mediana = "Mediana"
+  ) %>%
+  align(align = "right", part = "all") %>%
+  autofit()
+
+# Criar slide no PowerPoint
+# doc <- read_pptx()
+# doc <- add_slide(doc, layout = "Title and Content")
+# doc <- ph_with_flextable(doc, flex_tab, location = ph_location_type("body"))
+# 
+# # Salvar o arquivo PowerPoint
+# print(doc, target = "nome_do_arquivo.pptx")
+
+flex_tab
 ```
