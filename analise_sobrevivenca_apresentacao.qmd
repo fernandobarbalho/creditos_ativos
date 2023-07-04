@@ -20,6 +20,7 @@ library(tidyverse)
 library(colorspace)
 library(patchwork)
 library(forcats)
+library(flextable)
 
 #Carrega a base de dados longitudinal
 dados_longitudinais_trabalho_full <- readRDS("dados_longitudinais_trabalho_full.RDS")
@@ -67,42 +68,12 @@ dados_longitudinais_trabalho_full$diferenca_max_meses<- round(dados_longitudinai
 
 ## Análise por cluster de valores consolidado
 
-When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
+-   O cluster 1 possui a maior quantidade de registros, com um valor mínimo de R\$ 0.01 e um valor máximo de R\$522.953. A média dos valores consolidados é de R\$30.222, e a mediana é de R\$6.583.
+
+-   O cluster 4 apresenta a menor quantidade de registros, porém, tem valores muito maiores em termos de mínimo e máximo. O valor mínimo é de R\$30.300,870, e o valor máximo é de aproximadamente R\$6,8 bi. A média é de R\$120,8 mi, e a mediana é de R\$ 55,2 mi.
 
 ```{r }
 
-
-# tabela_valores <- dados_longitudinais_trabalho_full %>%
-#   group_by(cluster) %>%
-#   summarise(
-#     quantidade = n(),
-#     mínimo = min(valor_consolidado),
-#     máximo = max(valor_consolidado),
-#     média = mean(valor_consolidado),
-#     mediana = median(valor_consolidado)
-#   )
-# 
-# # Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
-# 
-# tabela_valores$quantidade <- format(tabela_valores$quantidade,  big.mark = ".")
-# 
-# tabela_valores$mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
-# tabela_valores$máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
-# tabela_valores$média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
-# tabela_valores$mediana <- format(tabela_valores$mediana, decimal.mark = ",", big.mark = ".")
-# 
-# # Renomear as colunas
-# colnames(tabela_valores) <- c("Cluster", "Quantidade", "Mínimo", "Máximo", "Média", "Mediana")
-# 
-# kable(tabela_valores[,  c("Cluster", "Quantidade", "Mínimo", "Máximo", "Média", "Mediana")],
-#       caption = "Resumo dos Valores Consolidados por Cluster", align=rep('r', 6)) %>%
-#   kable_styling(full_width = FALSE) %>%
-#   add_header_above(c(" " = 1, "Quantidade" = 1, "Valores Consolidados em R$" = 4))
-
-
-library(flextable)
-#library(officer)
-#library(magrittr)
 
 # Criação da tabela
 tabela_valores <- dados_longitudinais_trabalho_full %>%
@@ -116,6 +87,8 @@ tabela_valores <- dados_longitudinais_trabalho_full %>%
   )
 
 # Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
+tabela_valores$quantidade <- format(tabela_valores$quantidade,  big.mark = ".")
+
 tabela_valores$formatted_mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
 tabela_valores$formatted_máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
 tabela_valores$formatted_média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
@@ -146,4 +119,517 @@ flex_tab <- flex_tab %>%
 # print(doc, target = "nome_do_arquivo.pptx")
 
 flex_tab
+```
+
+## Análise por cluster de valores consolidados
+
+-   O cluster 1 possui a maior quantidade de eventos, com um total de 808,720. A mediana da sobrevivência é de 218 dias, com um intervalo de confiança de 95% entre 218 e 218 dias.
+
+-   O cluster 4 apresenta a menor quantidade de eventos, com apenas 78. A mediana da sobrevivência não pode ser calculada (NA), mas o intervalo de confiança de 95% indica que a sobrevivência pode variar entre 343 dias e um valor não calculado (NA).
+
+-   A mediana da sobrevivência nos clusters 2 e 3 é maior em comparação ao cluster 1. No cluster 2, a mediana é de 297 dias, com um intervalo de confiança de 95% entre 294 e 299 dias. No cluster 3, a mediana é de 319 dias, com um intervalo de confiança de 95% entre 315 e 324 dias.
+
+```{r}
+sobrevivencia <- Surv(time = dados_longitudinais_trabalho_full$diferenca_max_meses,
+                      event = dados_longitudinais_trabalho_full$status)
+
+# Ajuste os modelos de sobrevivência separadamente para cada grupo
+ajuste_cluster <- survfit(sobrevivencia ~ cluster, data = dados_longitudinais_trabalho_full)
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_cluster,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv")
+```
+
+## Análise por tipo de pessoa: física ou jurídica
+
+-   A análise revela que, considerando a dívida ativa, as pessoas jurídicas têm uma quantidade significativamente maior de registros em comparação com as pessoas físicas.
+
+-   Além disso, a faixa de valores consolidados para pessoas jurídicas é muito mais ampla.
+
+-   Em média, os valores consolidados das pessoas jurídicas (média de 169,693) também são maiores do que os das pessoas físicas (média de 56,660). Isso sugere diferenças significativas na distribuição dos valores consolidados entre os dois grupos.
+
+```{r}
+# Criação da tabela
+tabela_valores <- dados_longitudinais_trabalho_full %>%
+  group_by(tipo_pessoa) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  )
+
+
+# Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
+tabela_valores$quantidade <- format(tabela_valores$quantidade,  big.mark = ".")
+
+tabela_valores$formatted_mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_mediana <- format(tabela_valores$mediana, decimal.mark = ",", big.mark = ".")
+
+# Criação do objeto flextable
+flex_tab <- flextable(tabela_valores[, c("tipo_pessoa", "quantidade", "formatted_mínimo", "formatted_máximo", "formatted_média", "formatted_mediana")])
+
+# Customização do estilo da tabela
+flex_tab <- flex_tab %>%
+  set_header_labels(
+    tipo_pessoa = "Tipo pessoa",
+    quantidade = "Quantidade",
+    formatted_mínimo = "Mínimo",
+    formatted_máximo = "Máximo",
+    formatted_média = "Média",
+    formatted_mediana = "Mediana"
+  ) %>%
+  align(align = "right", part = "all") %>%
+  autofit()
+
+# Criar slide no PowerPoint
+# doc <- read_pptx()
+# doc <- add_slide(doc, layout = "Title and Content")
+# doc <- ph_with_flextable(doc, flex_tab, location = ph_location_type("body"))
+# 
+# # Salvar o arquivo PowerPoint
+# print(doc, target = "nome_do_arquivo.pptx")
+
+flex_tab
+```
+
+## Análise por tipo de pessoa: física ou jurídica
+
+-    A análise revela que, em termos percentuais, as pessoas físicas (PF) contribuem com aproximadamente 7.0% do valor total da dívida ativa, enquanto as pessoas jurídicas (PJ) representam uma proporção significativamente maior, contribuindo com cerca de 93.0% do valor total.
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  group_by(tipo_pessoa) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(tipo_pessoa = reorder(tipo_pessoa, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= tipo_pessoa, fill= tipo_pessoa  ), alpha= 1, show.legend = FALSE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       title = "Total consolidado por PF e PJ")
+```
+
+## Análise por tipo de pessoa: física ou jurídica
+
+-   No cruzamento que envolve tipo de pessoa e clusters, observa-se que as pessoas físicas são mais relevantes no cluster 1. Confirmando que as pessoas jurídicas são normalmente associadas a valores consolidados maiores do que pessoas físicas
+
+-   No segundo e terceiro gráficos vê-se que o efeito conjunto de quantidade e valor gera concentração de somatórios de valores favoráveis a PJ principalmente nos clusters de maiores valores consolidados
+
+```{r}
+g1<-
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= cluster, fill= tipo_pessoa, color= tipo_pessoa  ), alpha= 1, show.legend = TRUE, position = "fill") +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  ) +
+  labs(title= "Proporção de quantidades por tipo de pessoa e cluster")
+
+g2<-
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster, tipo_pessoa) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= tipo_pessoa  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       title= "Soma de valores consolidados por tipo de pessoa e cluster")
+
+g3<- dados_longitudinais_trabalho_full %>%
+  group_by(cluster, tipo_pessoa) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= tipo_pessoa  ), alpha= 1, show.legend = TRUE, position = "fill") +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "Proporção de valores consolidados",
+       title= "Proporção de soma de valores consolidados por tipo de pessoa e cluster")
+
+g1/g2/g3
+```
+
+## Análise por tipo de pessoa: física ou jurídica
+
+-   A mediana da sobrevivência para pessoas físicas é de 192 dias, com um intervalo de confiança de 95% entre 189 e 194 dias. Já para pessoas jurídicas, a mediana da sobrevivência é de 224 dias, com um intervalo de confiança de 95% entre 224 e 225 dias.
+
+```{r}
+ajuste_tipo_pessoa <- survfit(sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho_full)
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_tipo_pessoa,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv")
+
+```
+
+## Análise por tipo de pessoa e cluster
+
+-   Para pessoas físicas, o cluster 1 possui um maior número de registros (759,076) em comparação com os outros clusters. A mediana da sobrevivência é de 187 dias, com um intervalo de confiança de 95% entre 184 e 189 dias. Já o cluster 4 apresenta um número muito baixo de registros (104) e a mediana da sobrevivência não pode ser calculada (NA).
+
+-   Para pessoas jurídicas, o cluster 1 também possui o maior número de registros (3,286,069) em comparação com os outros clusters. A mediana da sobrevivência é de 224 dias, com um intervalo de confiança de 95% entre 223 e 224 dias. O cluster 4, assim como nas pessoas físicas, possui um número muito baixo de registros (1,900) e a mediana da sobrevivência não pode ser calculada (NA).
+
+```{r}
+ajuste_tipo_pessoa_cluster <- survfit(sobrevivencia ~ tipo_pessoa + cluster, data = dados_longitudinais_trabalho_full)
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_cluster,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = "tipo_pessoa",
+           risk.table = TRUE)
+```
+
+## Análise por crédito ajuizado
+
+-   A análise do indicador de ajuizamento revela que existem diferenças significativas nos registros de dívida ativa entre os casos em que houve ajuizamento (SIM) e os casos em que não houve ajuizamento (NAO).
+
+```{r}
+# Criação da tabela
+tabela_valores <- dados_longitudinais_trabalho_full %>%
+  group_by(indicador_ajuizado) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  )
+
+# Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
+tabela_valores$quantidade <- format(tabela_valores$quantidade,  big.mark = ".")
+
+tabela_valores$formatted_mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_mediana <- format(tabela_valores$mediana, decimal.mark = ",", big.mark = ".")
+
+# Criação do objeto flextable
+flex_tab <- flextable(tabela_valores[, c("indicador_ajuizado", "quantidade", "formatted_mínimo", "formatted_máximo", "formatted_média", "formatted_mediana")])
+
+# Customização do estilo da tabela
+flex_tab <- flex_tab %>%
+  set_header_labels(
+    indicador_ajuizado = "Ajuizado (s/n)",
+    quantidade = "Quantidade",
+    formatted_mínimo = "Mínimo",
+    formatted_máximo = "Máximo",
+    formatted_média = "Média",
+    formatted_mediana = "Mediana"
+  ) %>%
+  align(align = "right", part = "all") %>%
+  autofit()
+
+
+flex_tab
+```
+
+## Análise por crédito ajuizado
+
+-   Em termos percentuais, os créditos não ajuizados representam aproximadamente 19.5% do valor total da dívida ativa. Por outro lado, os créditos ajuizados têm uma proporção significativamente maior, representando cerca de 80.5% do valor total.
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  group_by(indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(indicador_ajuizado = reorder(indicador_ajuizado, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= indicador_ajuizado, fill= indicador_ajuizado  ), alpha= 1, show.legend = FALSE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       y="Créditos ajuizados (s/n)",
+       title = "Relevância de créditos ajuizados no valor consolidado total")
+
+```
+
+## Análise por crédito ajuizado
+
+-   As pessoas físicas são significamente mais representadas com inscrições não ajuizadas no cluster 1 do que nos outros clusters.
+
+-   As inscrições ajuizadas predominam nos clusters 2, 3, e 4 de forma mais significativa nas pessoas jurídicas quando comparado com pessoas físicas.
+
+```{r fig}
+g1<-
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= cluster, fill= indicador_ajuizado, color= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  ) +
+  facet_wrap(tipo_pessoa~.)+
+  labs(fill= "Ajuizado",
+       color = "Ajuizado",
+       title= "Quantidades por ajuizamento",
+       subtitle = "tipo pessoa x clusters")
+  
+
+g2<- 
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= cluster, fill= indicador_ajuizado, color= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  ) +
+  facet_wrap(tipo_pessoa~.) +
+  labs(fill= "Ajuizado",
+       color = "Ajuizado",
+       title= "Proporções por ajuizamento",
+       subtitle = "tipo pessoa x clusters")
+
+g1+g2
+```
+
+## Análise por crédito ajuizado
+
+-   Na análise por valores consolidados o principal achado é a proporção de não ajuizados com pessoas físicas no cluser 1. Para todas as outras situações há a significativa maior contribuição de inscrições ajuizadas.
+
+```{r}
+g1<-
+  
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster, tipo_pessoa, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  )+
+  labs(x= "valores em R$ bi",
+       fill= "Ajuizado",
+       color = "Ajuizado",
+       title = "Soma de valores consolidados",
+       subtitle = "ajuizados, tipo de pessoa e cluster") + 
+  facet_wrap(tipo_pessoa ~.)
+
+
+g2<-
+  
+dados_longitudinais_trabalho_full %>%
+  group_by(cluster, tipo_pessoa, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= cluster, fill= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  )+
+  labs(x= "Distribuição",
+       fill= "Ajuizado",
+       color = "Ajuizado",
+       title = "Proporção de valores consolidados",
+       subtitle = "ajuizados, tipo de pessoa e cluster") + 
+  facet_wrap(tipo_pessoa ~.)
+
+g1+g2
+
+```
+
+## Análise por crédito ajuizado
+
+-   No grupo de créditos em que não houve ajuizamento, há um total de 2,852,531 registros. A mediana da sobrevivência é de 109 dias.
+
+-   Por outro lado, no grupo de créditos em que houve ajuizamento, há um número menor de registros (1,304,231). A mediana da sobrevivência é de 250 dias.
+
+```{r}
+ajuste_ajuizado <- survfit(sobrevivencia ~ indicador_ajuizado, data = dados_longitudinais_trabalho_full)
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_ajuizado,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE, censor=FALSE,
+           surv.median.line= "hv")
+```
+
+## Análise por crédito ajuizado
+
+-    No cluster 1 oberva-se grande diferença entre os tempos de ajuizado e não ajuizado em PJ. Isso não ocorre no caso de PF.
+
+-   Ainda no cluster 1, no caso de PJ, o tempo para alcançar o 50% de sobrevivência é bem menor do que o de PF, quando se analisa os créditos não ajuizados o que não combina com o que normalmente se espera na comparação entre PF e PJ.
+
+```{r}
+
+ggsurvplot(ajuste_ajuizado,
+           data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE, censor=FALSE,
+           surv.median.line= "hv",
+           facet.by = c("cluster", "tipo_pessoa"),
+           risk.table = TRUE)
+
+
+
+```
+
+## Análise por tipo de receita do principal
+
+-   Tabela resumo dos tipos de receita com maior quantidade de ocorrências
+
+```{r}
+top_8_receita_principal<-
+  (dados_longitudinais_trabalho_full %>%
+     group_by(receita_principal) %>%
+     summarise(
+       quantidade =  n()
+     ) %>%
+     slice_max(order_by = quantidade, n=8))$receita_principal
+
+tabela_valores <-
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal ) %>%
+  group_by(receita_principal) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  )
+
+# Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
+tabela_valores$quantidade <- format(tabela_valores$quantidade,  big.mark = ".")
+
+tabela_valores$formatted_mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_mediana <- format(tabela_valores$mediana, decimal.mark = ",", big.mark = ".")
+
+# Criação do objeto flextable
+flex_tab <- flextable(tabela_valores[, c("receita_principal", "quantidade", "formatted_mínimo", "formatted_máximo", "formatted_média", "formatted_mediana")])
+
+# Customização do estilo da tabela
+flex_tab <- flex_tab %>%
+  set_header_labels(
+    receita_principal = "Tipo receita",
+    quantidade = "Quantidade",
+    formatted_mínimo = "Mínimo",
+    formatted_máximo = "Máximo",
+    formatted_média = "Média",
+    formatted_mediana = "Mediana"
+  ) %>%
+  align(align = "right", part = "all") %>%
+  autofit()
+
+flex_tab
+
+
+```
+
+## Análise por tipo de receita do principal
+
+-   Ranking para o valor consolidado total
+
+```{r}
+dados_longitudinais_trabalho_full%>%
+  filter(receita_principal %in% top_8_receita_principal ) %>%
+  group_by(receita_principal) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  mutate(receita_principal = reorder(receita_principal, valor_total)) %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= receita_principal  ), alpha= 1, show.legend = FALSE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       y= "Tipo de receita")
+```
+
+## Análise por tipo de receita do principal
+
+-   A quantidade de créditos ajuizados só não é importante para o cluster 1, o que não ocorre para os demais clusters, para qualquer um dos tipos de receita.
+
+-   Mais especificamente para o Simples e dívidas isoladoas, é notório uma relevância mais significativas de não ajuizados para o cluster 1.
+
+```{r}
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal) %>%
+  ggplot() +
+  geom_bar(aes(y= fct_reorder(receita_principal, receita_principal, length), fill= indicador_ajuizado  ), alpha= 1, show.legend = TRUE, position = "fill") +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "Proporção",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(cluster ~.)
+
 ```
