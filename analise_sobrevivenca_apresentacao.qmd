@@ -633,3 +633,93 @@ dados_longitudinais_trabalho_full %>%
   facet_wrap(cluster ~.)
 
 ```
+
+## Análise por tipo de receita do principal
+
+-   Quando observamos os valores totais, percebemos a importância dos lançamentos ajuizados mesmo para o cluster 1 onde a quntidade desse tipo de lançamento é bem inferior do que a classe dos não ajuizados.
+
+-   A úncia exceção significativa para essa regra refere-se aos tributos de Simples nacional onde os valores consolidados de não ajuizados são maiores do que os valores ajuizados.
+
+```{r fig.height=12}
+g1<-
+  
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal) %>%
+  group_by(cluster, receita_principal, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= fct_reorder(receita_principal, valor_total, sum), fill= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(cluster ~.)
+
+
+g2<-
+  
+dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal) %>%
+  group_by(cluster, receita_principal, indicador_ajuizado) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= fct_reorder(receita_principal, valor_total, sum), fill= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "valores em R$ bi",
+       fill= "Ajuizado",
+       color = "Ajuizado") + 
+  facet_wrap(cluster ~.)
+
+g1/g2
+```
+
+## Análise por tipo de receita do principal
+
+-   As principais categorias de receita principal que se destacam são:
+
+    -   "DIV ATIVA-SIMPLES NACIONAL" com uma mediana de sobrevivência de 80.1 dias.
+
+    -   "R D Ativa - Multa Isolada" com uma mediana de sobrevivência de 161.4 dias.
+
+    -   CSLL e IRPJ com mediana de sobrevivência de 246,2 dias
+
+```{r}
+
+trabalho_receita_principal<-
+  dados_longitudinais_trabalho_full %>%
+  filter(receita_principal %in% top_8_receita_principal)
+
+
+sobrevivencia_receita_principal <- Surv(time = trabalho_receita_principal$diferenca_max_meses,
+                                        event = trabalho_receita_principal$status)
+
+ajuste_receita_principal <- survfit(sobrevivencia_receita_principal ~ receita_principal, data = trabalho_receita_principal)
+
+ggsurvplot(ajuste_receita_principal,
+           data = trabalho_receita_principal,
+           conf.int = TRUE,
+           censor=FALSE,
+           surv.median.line= "hv")
+```
