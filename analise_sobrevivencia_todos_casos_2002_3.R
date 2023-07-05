@@ -105,23 +105,20 @@ ajuste_situacao
 # Plote as curvas de sobrevivência para cada grupo
 ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            conf.int = TRUE,
-           censor=FALSE, surv.median.line= "hv",
-           risk.table = TRUE)
+           censor=FALSE, surv.median.line= "hv")
 
 
 # Plote as curvas de sobrevivência para cada grupo com facet para tipo de pessoa
 ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            conf.int = TRUE,
            censor=FALSE, surv.median.line= "hv",
-           facet.by = "tipo_pessoa",
-           risk.table = TRUE)
+           facet.by = "tipo_pessoa")
 
 
 ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            conf.int = TRUE,
            censor=FALSE, surv.median.line= "hv",
-           facet.by = "cluster",
-           risk.table = TRUE)
+           facet.by = "cluster")
 
 ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            conf.int = TRUE,
@@ -129,7 +126,19 @@ ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            facet.by = "indicador_ajuizado",
            risk.table = TRUE)
 
+trabalho_tipo_situacao<-
+  dados_longitudinais_trabalho_full%>%
+  filter(receita_principal %in% top_8_receita_principal,
+         tipo_situacao_inscricao %in% c("Em cobrança","Benefício Fiscal"))
 
+sobrevivencia_tipo_situacao <- Surv(time = trabalho_tipo_situacao$diferenca_max_meses,
+                                         event = trabalho_tipo_situacao$status)
+
+ajuste_situacao_receita <- survfit(sobrevivencia ~ tipo_situacao_inscricao + receita_principal + indicador_ajuizado +cluster, data = trabalho_tipo_situacao)
+
+ajuste_situacao
+
+ajuste_situacao_receita
 
 ########## Situacao_inscricao
 questionr::freq(dados_longitudinais_trabalho_full$situacao_inscricao, cum = TRUE, sort = "dec", total = TRUE)

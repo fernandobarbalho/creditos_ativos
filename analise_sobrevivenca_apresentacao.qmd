@@ -740,3 +740,80 @@ ggsurvplot(ajuste_receita_principal,
            risk.table = TRUE)
 
 ```
+
+## Análise por tipo de situação da inscrição
+
+-   Inscrições em cobrança apresentam maior quantidade (76%), mas como valor de mediana inferior aos demais
+
+-   Garantia possui poucas ocorrências, (\<0,3%), mas destaca-se pela média e mediana de valores consolidados bastante superior aos outros tipos
+
+```{r}
+tabela_valores <-
+dados_longitudinais_trabalho_full %>%
+  group_by(tipo_situacao_inscricao) %>%
+  summarise(
+    quantidade = n(),
+    mínimo = min(valor_consolidado),
+    máximo = max(valor_consolidado),
+    média = mean(valor_consolidado),
+    mediana = median(valor_consolidado)
+  ) %>%
+  arrange(desc(quantidade))
+
+# Formatação dos valores com decimais separados por vírgula e milhares separados por ponto
+tabela_valores$quantidade <- format(tabela_valores$quantidade,  big.mark = ".")
+
+tabela_valores$formatted_mínimo <- format(tabela_valores$mínimo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_máximo <- format(tabela_valores$máximo, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_média <- format(tabela_valores$média, decimal.mark = ",", big.mark = ".")
+tabela_valores$formatted_mediana <- format(tabela_valores$mediana, decimal.mark = ",", big.mark = ".")
+
+# Criação do objeto flextable
+flex_tab <- flextable(tabela_valores[, c("tipo_situacao_inscricao", "quantidade", "formatted_mínimo", "formatted_máximo", "formatted_média", "formatted_mediana")])
+
+# Customização do estilo da tabela
+flex_tab <- flex_tab %>%
+  set_header_labels(
+    tipo_situacao_inscricao = "Tipo situacao inscrição",
+    quantidade = "Quantidade",
+    formatted_mínimo = "Mínimo",
+    formatted_máximo = "Máximo",
+    formatted_média = "Média",
+    formatted_mediana = "Mediana"
+  ) %>%
+  align(align = "right", part = "all") %>%
+  autofit()
+
+flex_tab
+
+```
+
+## Análise por tipo de situação da inscrição
+
+-   O efeito quantidade para a situação em cobrança resulta em um grande valor consolidado total.Esse valor é superior à soma das demais situações.
+
+```{r}
+
+  
+dados_longitudinais_trabalho_full %>%
+  group_by(tipo_situacao_inscricao) %>%
+  summarise(
+    valor_total = sum(valor_consolidado) / 10 ^9
+  )%>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x = valor_total, y= fct_reorder(tipo_situacao_inscricao, valor_total, sum)  ), alpha= 1) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90),
+    axis.title.y = element_blank()
+  )+
+  labs(x= "valores em R$ bi")
+
+
+
+```
