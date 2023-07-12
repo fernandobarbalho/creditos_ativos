@@ -167,7 +167,52 @@ dados_longitudinais_trabalho_full %>%
   summarise(n())
 
 
-km <- survfit(Surv(time = diferenca_max_meses,event = status) ~ 1,
+km <- survfit(Surv(time = round(diferenca_max_meses,0),event = status) ~ 1,
               data = dados_longitudinais_trabalho_full)
 
 summary(km)
+
+
+corte_temporal_pf<-
+  dados_longitudinais_trabalho_full %>%
+  filter(tipo_devedor == "PRINCIPAL",
+         tipo_pessoa == "Pessoa física") %>%
+  mutate(ano = lubridate::year(data_inscricao)) %>%
+  group_by(ano) %>%
+  summarise(
+    quantidade =  n(),
+    valor_consolidado_total = sum(valor_consolidado)
+  ) %>%
+  arrange(desc(quantidade))
+
+
+corte_temporal_pj<-
+  dados_longitudinais_trabalho_full %>%
+  filter(tipo_devedor == "PRINCIPAL",
+         tipo_pessoa == "Pessoa jurídica") %>%
+  mutate(ano = lubridate::year(data_inscricao)) %>%
+  group_by(ano) %>%
+  summarise(
+    quantidade =  n(),
+    valor_consolidado_total = sum(valor_consolidado)
+  ) %>%
+  arrange(desc(quantidade))
+
+2254198/4156762
+
+1-(1/7)
+
+(1-(6303/4156762)) * (1-(5193/4103410))
+
+fab<- tibble(tempo = km$time, survival = km$surv, sobreviventes = km$n.risk, eventos= km$n.event)
+
+fab$eventos_acum <- cumsum(fab$eventos)
+
+
+sum(km$n.event)
+
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_histogram(aes(x=diferenca_max_meses), color= "white")
+
+

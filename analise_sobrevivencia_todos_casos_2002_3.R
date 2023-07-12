@@ -120,6 +120,10 @@ ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            censor=FALSE, surv.median.line= "hv",
            facet.by = "cluster")
 
+ajuste_situacao_ajuizado<- survfit(sobrevivencia ~ tipo_situacao_inscricao + indicador_ajuizado, data = dados_longitudinais_trabalho_full)
+
+88/241
+
 ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
            conf.int = TRUE,
            censor=FALSE, surv.median.line= "hv",
@@ -134,7 +138,10 @@ trabalho_tipo_situacao<-
 sobrevivencia_tipo_situacao <- Surv(time = trabalho_tipo_situacao$diferenca_max_meses,
                                          event = trabalho_tipo_situacao$status)
 
-ajuste_situacao_receita <- survfit(sobrevivencia ~ tipo_situacao_inscricao + receita_principal + indicador_ajuizado +cluster, data = trabalho_tipo_situacao)
+
+
+
+ajuste_situacao_receita <- survfit(sobrevivencia_tipo_situacao ~ tipo_situacao_inscricao + receita_principal + indicador_ajuizado +cluster, data = trabalho_tipo_situacao)
 
 ajuste_situacao
 
@@ -382,3 +389,48 @@ ggsurvplot(ajuste_cluster,
            surv.median.line= "hv",
            risk.table = TRUE,
            facet.by = "indicador_ajuizado")
+
+
+dados_longitudinais_trabalho_full %>%
+  filter(status == "0") %>%
+  summarise(mean(diferenca_max_meses))
+
+
+dados_longitudinais_trabalho_full %>%
+  filter(status == "0") %>%
+  summarise(
+    mean(diferenca_max_meses),
+    median(diferenca_max_meses))
+
+
+
+dados_longitudinais_trabalho_full %>%
+  group_by(tipo_pessoa) %>%
+  filter(status == "0") %>%
+  summarise(
+    mean(diferenca_max_meses),
+    median(diferenca_max_meses))
+
+
+dados_longitudinais_trabalho_full %>%
+  group_by(tipo_pessoa) %>%
+  filter(status == "1") %>%
+  summarise(
+    mean(diferenca_max_meses),
+    median(diferenca_max_meses))
+
+
+dados_longitudinais_trabalho_full %>%
+  group_by(indicador_ajuizado) %>%
+  filter(status == "0") %>%
+  summarise(
+    mean(diferenca_max_meses),
+    median(diferenca_max_meses))
+
+
+dados_longitudinais_trabalho_full %>%
+  group_by(indicador_ajuizado) %>%
+  filter(status == "1") %>%
+  summarise(
+    mean(diferenca_max_meses),
+    median(diferenca_max_meses))

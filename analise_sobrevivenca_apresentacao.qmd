@@ -817,3 +817,76 @@ dados_longitudinais_trabalho_full %>%
 
 
 ```
+
+## Análise por tipo de situação da inscrição
+
+-   As inscrições não ajuizadas predominam nos dois principais tipos de situação: *Em cobrança* e *Benefício Fiscal*.
+
+```{r}
+g1<-
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= tipo_situacao_inscricao, fill= indicador_ajuizado, color= indicador_ajuizado  ), alpha= 1, show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  ) +
+  labs(fill= "Ajuizado",
+       color = "Ajuizado",
+       title= "Quantidades por ajuizamento",
+       y="")
+  
+
+g2<- 
+dados_longitudinais_trabalho_full %>%
+  ggplot() +
+  geom_bar(aes(y= tipo_situacao_inscricao, fill= indicador_ajuizado, color= indicador_ajuizado  ), alpha= 1, position = "fill", show.legend = TRUE) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ".", decimal.mark = ",")) +
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 90)
+  ) +
+  labs(fill= "Ajuizado",
+       color = "Ajuizado",
+       y="",
+       title= "Proporções por ajuizamento")
+
+g1+g2
+```
+
+## Análise por tipo de situação da inscrição
+
+-   As inscrições em cobrança apresentam mediana de sobrevivência 80 meses menor do que as que estão associadas a benefício fiscal (297 meses - 218 meses)
+
+```{r}
+ajuste_situacao <- survfit(sobrevivencia ~ tipo_situacao_inscricao, data = dados_longitudinais_trabalho_full)
+
+# Plote as curvas de sobrevivência para cada grupo
+ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE, surv.median.line= "hv")
+
+```
+
+## Análise por tipo de situação da inscrição
+
+-   A mediana da probabilidade de sobrevivência para créditos em cobrança não ajuizados (88 meses) corresponde a 36% do que é calculado para cobranças ajuizadas (244 meses)
+
+```{r}
+
+ajuste_situacao_ajuizado<- survfit(sobrevivencia ~ tipo_situacao_inscricao + indicador_ajuizado, data = dados_longitudinais_trabalho_full)
+
+ggsurvplot(ajuste_situacao, data = dados_longitudinais_trabalho_full,
+           conf.int = TRUE,
+           censor=FALSE, surv.median.line= "hv",
+           facet.by = "indicador_ajuizado",
+           risk.table = TRUE)
+
+```
