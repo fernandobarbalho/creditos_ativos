@@ -12,3 +12,5 @@ contencioso_administrativo_de_primeira_instancia <- read_delim("data/contencioso
 
 
 contencioso_administrativo_de_primeira_instancia <-  janitor::clean_names(contencioso_administrativo_de_primeira_instancia)
+
+
