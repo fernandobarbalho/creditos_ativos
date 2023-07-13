@@ -2,6 +2,8 @@ library(forecast)
 library(lubridate)
 
 
+#Função para deflacionar valores usando o IPCA
+
 calcula_valor_constante <- function(df_dados_hist, data_constante ){
   #Argumentos
   #df_dados_hist: dataframe em que as duas primeiras colunas são formadas por uma data (Y-m-d) e um valor
@@ -87,24 +89,20 @@ calcula_valor_constante <- function(df_dados_hist, data_constante ){
 
 
 
-contencioso_administrativo_de_primeira_instancia %>%
-  dplyr::filter(str_sub(mes_ano,5,6) >= "21" ) %>%
-  ggplot() +
-  geom_col(aes(x=mes_ano, y= quantidade_de_processos), color="white") +
-  theme(
-    panel.grid = element_blank()
-  )
+
+####Análise de séries temporais
 
 
+###Análise das quantidades
+
 contencioso_administrativo_de_primeira_instancia %>%
-  dplyr::filter(str_sub(mes_ano,5,6) == "22" ) %>%
+  #dplyr::filter(str_sub(mes_ano,5,6) == "22" ) %>%
   ggplot() +
-  geom_line(aes(x=mes_ano, y= quantidade_de_processos), color="black") +
+  geom_line(aes(x=data, y= quantidade_de_processos), color="black") +
   theme(
     panel.grid = element_blank(),
 
   )
-
 
 
 
@@ -119,14 +117,30 @@ autoplot(decomp)
 
 
 
-
-#Exemplo de uso
-df_dados_hist<-
-  tibble(data=as.Date("1994-07-01"), valor =400) %>%
-  bind_rows(tibble(data=as.Date("1993-07-01"), valor =19800))
+###análise da série temporal dos valores
 
 
-df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2020-05-01" )
+#Valores históricos
+
+serie_temporal_valor_total_hist <- ts(contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos,
+                                 frequency = 12,
+                                 start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
+                                           month(min(contencioso_administrativo_de_primeira_instancia$data))))
+
+decomp <- decompose(serie_temporal_valor_total_hist)
+
+autoplot(decomp)
+
+
+
+serie_temporal_valor_julgado_hist <- ts(contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos_julgados,
+                                        frequency = 12,
+                                        start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
+                                                  month(min(contencioso_administrativo_de_primeira_instancia$data))))
+
+decomp <- decompose(serie_temporal_valor_julgado_hist)
+
+autoplot(decomp)
 
 
 
@@ -161,6 +175,21 @@ serie_temporal_valor_julgado <- ts(df_valores_constantes$valor,
                                  start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
                                            month(min(contencioso_administrativo_de_primeira_instancia$data))))
 
-decomp <- decompose(serie_temporal_valor_total)
+decomp <- decompose(serie_temporal_valor_julgado)
 
 autoplot(decomp)
+
+
+###Análise dos tempos de julgamento
+
+contencioso_administrativo_de_primeira_instancia %>%
+  select(data, starts_with("tempo")) %>%
+  pivot_longer(cols=-data, names_to = "tempo", values_to = "valor") %>%
+  ggplot() +
+  geom_line(aes(x=data, y= valor)) +
+  theme_light() +
+  facet_wrap(tempo~.)
+  theme(
+    panel.grid = element_blank(),
+    legend.position = "bottom"
+  )
