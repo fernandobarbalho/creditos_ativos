@@ -14,3 +14,10 @@ contencioso_administrativo_de_primeira_instancia <- read_delim("data/contencioso
 contencioso_administrativo_de_primeira_instancia <-  janitor::clean_names(contencioso_administrativo_de_primeira_instancia)
 
 
+contencioso_administrativo_de_primeira_instancia$data<-
+  str_c("01-",contencioso_administrativo_de_primeira_instancia$mes_ano)
+
+contencioso_administrativo_de_primeira_instancia$data <-
+  as.Date(contencioso_administrativo_de_primeira_instancia$data, format = "%d-%B-%y")
+
+

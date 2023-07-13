@@ -2,45 +2,6 @@ library(forecast)
 library(lubridate)
 
 
-
-
-contencioso_administrativo_de_primeira_instancia %>%
-  dplyr::filter(str_sub(mes_ano,5,6) >= "21" ) %>%
-  ggplot() +
-  geom_col(aes(x=mes_ano, y= quantidade_de_processos), color="white") +
-  theme(
-    panel.grid = element_blank()
-  )
-
-
-contencioso_administrativo_de_primeira_instancia %>%
-  dplyr::filter(str_sub(mes_ano,5,6) == "22" ) %>%
-  ggplot() +
-  geom_line(aes(x=mes_ano, y= quantidade_de_processos), color="black") +
-  theme(
-    panel.grid = element_blank(),
-
-  )
-
-
-
-contencioso_administrativo_de_primeira_instancia$data<-
-  str_c("01-",contencioso_administrativo_de_primeira_instancia$mes_ano)
-
-contencioso_administrativo_de_primeira_instancia$data <-
-  as.Date(contencioso_administrativo_de_primeira_instancia$data, format = "%d-%B-%y")
-
-serie_temporal_quantidade <- ts(contencioso_administrativo_de_primeira_instancia$quantidade_de_processos,
-                     frequency = 12,
-                     start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
-                               month(min(contencioso_administrativo_de_primeira_instancia$data))))
-
-decomp <- decompose(serie_temporal)
-
-autoplot(decomp)
-
-
-
 calcula_valor_constante <- function(df_dados_hist, data_constante ){
   #Argumentos
   #df_dados_hist: dataframe em que as duas primeiras colunas são formadas por uma data (Y-m-d) e um valor
@@ -123,6 +84,42 @@ calcula_valor_constante <- function(df_dados_hist, data_constante ){
 
 }
 
+
+
+
+contencioso_administrativo_de_primeira_instancia %>%
+  dplyr::filter(str_sub(mes_ano,5,6) >= "21" ) %>%
+  ggplot() +
+  geom_col(aes(x=mes_ano, y= quantidade_de_processos), color="white") +
+  theme(
+    panel.grid = element_blank()
+  )
+
+
+contencioso_administrativo_de_primeira_instancia %>%
+  dplyr::filter(str_sub(mes_ano,5,6) == "22" ) %>%
+  ggplot() +
+  geom_line(aes(x=mes_ano, y= quantidade_de_processos), color="black") +
+  theme(
+    panel.grid = element_blank(),
+
+  )
+
+
+
+
+serie_temporal_quantidade <- ts(contencioso_administrativo_de_primeira_instancia$quantidade_de_processos,
+                     frequency = 12,
+                     start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
+                               month(min(contencioso_administrativo_de_primeira_instancia$data))))
+
+decomp <- decompose(serie_temporal_quantidade)
+
+autoplot(decomp)
+
+
+
+
 #Exemplo de uso
 df_dados_hist<-
   tibble(data=as.Date("1994-07-01"), valor =400) %>%
@@ -133,10 +130,15 @@ df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2020-05-01" )
 
 
 
+df_dados_hist<-
+  tibble(data=contencioso_administrativo_de_primeira_instancia$data,
+         valor =contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos)
+
+df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2023-05-01" )
 
 
 
-serie_temporal_valor_total <- ts(contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos,
+serie_temporal_valor_total <- ts(df_valores_constantes$valor,
                                 frequency = 12,
                                 start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
                                           month(min(contencioso_administrativo_de_primeira_instancia$data))))
@@ -146,7 +148,15 @@ decomp <- decompose(serie_temporal_valor_total)
 autoplot(decomp)
 
 
-serie_temporal_valor_julgado <- ts(contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos_julgados,
+df_dados_hist<-
+  tibble(data=contencioso_administrativo_de_primeira_instancia$data,
+         valor =contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos_julgados)
+
+df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2023-05-01"  )
+
+
+
+serie_temporal_valor_julgado <- ts(df_valores_constantes$valor,
                                  frequency = 12,
                                  start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
                                            month(min(contencioso_administrativo_de_primeira_instancia$data))))
