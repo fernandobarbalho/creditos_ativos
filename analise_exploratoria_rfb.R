@@ -52,6 +52,10 @@ calcula_valor_constante <- function(df_dados_hist, data_constante ){
   library(dplyr)
   library(lubridate)
 
+  library(httr)
+  library(jsonlite)
+
+
   names(df_dados_hist)[1:2]<- c("data","valor")
 
   ###faz a conversão para real
@@ -66,11 +70,19 @@ calcula_valor_constante <- function(df_dados_hist, data_constante ){
   #################Cálculos econômicos
   #Dados do IPCA com a série temporal
 
-  download.file("http://api.bcb.gov.br/dados/serie/bcdata.sgs.4449/dados?formato=csv", destfile = "bcdata.sgs.4449.csv")
+  url<- "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4449/dados?formato=json"
 
-  IPCA_historico <- read_delim("bcdata.sgs.4449.csv",
-                               ";", escape_double = FALSE, locale = locale(decimal_mark = ",",
-                                                                           grouping_mark = "."), trim_ws = TRUE)
+
+  resposta <- GET(url)
+  IPCA_historico <- content(resposta, "text")
+  IPCA_historico <- fromJSON(IPCA_historico, flatten = TRUE)
+
+
+  IPCA_historico$valor <- as.numeric(IPCA_historico$valor)
+
+  # IPCA_historico <- read_delim("bcdata.sgs.4449.csv",
+  #                              ";", escape_double = FALSE, locale = locale(decimal_mark = ",",
+  #                                                                          grouping_mark = "."), trim_ws = TRUE)
   IPCA_historico<-
     IPCA_historico %>%
     filter(data<= ymd(data_constante))
@@ -121,104 +133,6 @@ df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2020-05-01" )
 
 
 
-library(httr)
-library(jsonlite)
-
-# Função para obter os dados do IPCA de um determinado período
-obterDadosIPCA <- function(ano_inicial, mes_inicial, ano_final, mes_final) {
-  url <- paste0("https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial=",
-                ano_inicial, "-", mes_inicial, "-01&dataFinal=", ano_final, "-", mes_final, "-01")
-
-  resposta <- GET(url)
-  dados <- content(resposta, "text")
-  dados <- fromJSON(dados, flatten = TRUE)
-
-  return(dados)
-}
-
-# Função para realizar a deflação dos valores usando o IPCA
-deflacionarValores <- function(dados, coluna_valores, coluna_mes_ano) {
-  # Obter dados do IPCA desde 2013 até o mês mais recente
-  dados_ipca <- obterDadosIPCA(2013, 1, year(Sys.Date()), month(Sys.Date()))
-
-  # Criar um dataframe auxiliar com os dados do IPCA
-  df_ipca <- data.frame(Data = as.Date(dados_ipca$data),
-                        IPCA = as.numeric(dados_ipca$valor))
-
-  # Converter a coluna de data do dataframe original para o formato apropriado
-  dados[[coluna_mes_ano]] <- as.Date(dados[[coluna_mes_ano]], format = "%Y-%m")
-
-  # Definir a coluna de valores deflacionados
-  coluna_deflacionada <- paste0(coluna_valores, "_deflacionado")
-
-  # Realizar a deflação dos valores
-  dados[[coluna_deflacionada]] <- dados[[coluna_valores]] / (1 + approx(df_ipca$Data, df_ipca$IPCA, xout = dados[[coluna_mes_ano]])$y)
-
-  return(dados)
-}
-
-# Exemplo de uso
-
-# Definir o nome do dataframe contendo os dados
-nome_dataframe <- "contencioso_administrativo_de_primeira_instancia"
-
-# Definir o nome da coluna com os valores a serem deflacionados
-coluna_valores <- "valor_total_dos_processos"
-
-# Definir o nome da coluna contendo a data
-coluna_mes_ano <- "data"
-
-# Obter os dados do dataframe
-dados <- get(nome_dataframe)
-
-# Deflacionar os valores
-dados_deflacionados <- deflacionarValores(dados, coluna_valores, coluna_mes_ano)
-
-# Verificar o resultado
-print(dados_deflacionados)
-
-
-
-# Instalar e carregar a biblioteca GetBCBData
-install.packages("GetBCBData")
-library(GetBCBData)
-
-# Definir a série de dados do IPCA
-serie_ipca <- 433
-
-# Definir o período de início e fim desejado
-ano_inicial <- 2013
-mes_inicial <- 1
-ano_final <- 2023
-mes_final <- 6
-
-# Obter os dados do IPCA no período desejado
-dados_ipca <- gbcbd_get_series(id= serie_ipca, first_date = paste0(ano_inicial, "-", mes_inicial, "-01"),
-                         last_date = paste0(ano_final, "-", mes_final, "-01"))
-
-
-GetBCBData::gbcbd_get_series(
-  id = serie_ipca,
-  first.date = "2013-01-01",
-  last.date = "2023-06-01"
-)
-# Carregar o dataframe contendo os dados
-dados <- read.csv("caminho/do/arquivo.csv")  # Substituir pelo caminho correto do arquivo CSV
-
-# Definir o nome da coluna com os valores a serem desinflacionados
-coluna_valores <- "quantidade_processos"
-
-# Definir o nome da coluna contendo a data
-coluna_mes_ano <- "mes_ano"
-
-# Converter a coluna de data do dataframe para o formato apropriado
-dados[[coluna_mes_ano]] <- as.Date(dados[[coluna_mes_ano]], format = "%Y-%m")
-
-# Realizar a desinflação dos valores
-dados$desinflacionado <- dados[[coluna_valores]] / (1 + dados_ipca$value / 100)
-
-# Verificar o resultado
-print(dados)
 
 
 
