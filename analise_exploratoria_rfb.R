@@ -249,3 +249,35 @@ contencioso_administrativo_de_primeira_instancia %>%
   print(df)
 
 
+  # Criando uma série temporal fictícia
+  dados <- data.frame(tempo = 1:100, valor = rnorm(100))
+
+  # Ajustando um modelo de regressão linear
+  modelo <- lm(valor ~ tempo, data = dados)
+
+  # Calculando o coeficiente de determinação
+  coeficiente_r2 <- summary(modelo)$r.squared
+
+
+  dados %>%
+    ggplot() +
+    geom_line(aes(x=tempo, y=valor))
+
+
+  # Instale o pacote "Kendall" se ainda não estiver instalado
+  # install.packages("Kendall")
+
+  # Carregue o pacote "Kendall"
+  library(Kendall)
+
+  # Crie uma série temporal fictícia com uma quebra de tendência
+  dados <- c(1:50, 51:100)
+
+
+  dados <- c(1:50, 50:1)
+
+  # Execute o teste de Mann-Kendall
+  resultado <- Kendall(dados, y = 1:100)
+
+  resultado<- Kendall(decomp$trend,1:NROW(decomp$trend))
+

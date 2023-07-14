@@ -188,7 +188,7 @@ df_valores_constantes %>%
 
 -   **Tendência:** Observa-se uma tendência de crescimento até o segundo semestre de 2015, quando ocorre uma reversão caracterizada por uma queda gradual e constante que se verifica até o segundo semestre de 2021. A partir daí ocorre uma tendência decrescimento forte até o final do período analisado
 
--   
+-   **Sazonalidade:** A comportamento da sazonalidade acompanha o que foi observado na curva de quantidade, ou seja: valores elevados no primeiro trimestre de cada ano, seguida de uma marcante redução nos valores principalmente no segundo semestre nos anos observados.
 
 ```{r}
 
@@ -201,6 +201,59 @@ serie_temporal_valor_total <- ts(df_valores_constantes$valor,
                                           month(min(contencioso_administrativo_de_primeira_instancia$data))))
 
 decomp <- decompose(serie_temporal_valor_total)
+
+autoplot(decomp)
+
+```
+
+## Série temporal de valores totais julgados
+
+-   **Valor mínimo**: A série temporal registra um valor mínimo de R\$ 35,7 mi na data de janeiro de 2022.
+
+-   **Valor máximo**: A série temporal atinge um valor máximo de R\$ 57.2 bi em junho de 2017.
+
+-   **Último valor disponível**: O valor mais recente registrado na série é de R\$ 17.3 bi, datado de março de 2023.
+
+```{r}
+
+df_dados_hist<-
+  tibble(data=contencioso_administrativo_de_primeira_instancia$data,
+         valor =contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos_julgados)
+
+df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2023-05-01" )
+
+
+df_valores_constantes %>%
+  ggplot() +
+  geom_line(aes(x=data, y= valor/10^9), color="black") +
+  theme_light()+
+  theme(
+    panel.grid = element_blank(),
+
+  ) +
+  labs(
+    title =  "Evolução de valores totais julgados",
+    subtitle = "Valores atualizados pelo IPCA",
+    y= "Valores totais em R$(bi)",
+    x= ""
+  )
+
+```
+
+## Série temporal de valores totais julgados
+
+-   **Tendência:** Durtante quase toda série temporal observa-se valores estáveis sem um comportamento claro de tendência. Apenas no segundo semestre é que há uma forte inclinação negativa, seguida pelo início de uma pequena recuperação a partir de janeiro de 2022
+
+-   **Sazonalidade:** Não há padrões importantes que se possa destacar na análise de sazonalidade
+
+```{r}
+
+serie_temporal_valor_julgado <- ts(df_valores_constantes$valor,
+                                 frequency = 12,
+                                 start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
+                                           month(min(contencioso_administrativo_de_primeira_instancia$data))))
+
+decomp <- decompose(serie_temporal_valor_julgado)
 
 autoplot(decomp)
 
