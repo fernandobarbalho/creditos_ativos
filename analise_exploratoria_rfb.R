@@ -105,6 +105,10 @@ contencioso_administrativo_de_primeira_instancia %>%
   )
 
 
+contencioso_administrativo_de_primeira_instancia %>%
+  select(data, quantidade_de_processos) %>%
+  readr::write_csv("quantidades_contencioso.csv")
+
 
 serie_temporal_quantidade <- ts(contencioso_administrativo_de_primeira_instancia$quantidade_de_processos,
                      frequency = 12,
@@ -114,6 +118,16 @@ serie_temporal_quantidade <- ts(contencioso_administrativo_de_primeira_instancia
 decomp <- decompose(serie_temporal_quantidade)
 
 autoplot(decomp)
+
+
+df_seasonal_quantidade <- data.frame(date = seq.Date(min(contencioso_administrativo_de_primeira_instancia$data),
+                                                     max(contencioso_administrativo_de_primeira_instancia$data),
+                                                     by = "month"),
+                 value = as.vector(decomp$seasonal))
+
+df_seasonal_quantidade %>%
+  readr::write_csv("df_seasonal_quantidade.csv")
+
 
 
 
@@ -143,6 +157,25 @@ decomp <- decompose(serie_temporal_valor_julgado_hist)
 autoplot(decomp)
 
 
+df_trend_valores_totais <- data.frame(date = seq.Date(min(contencioso_administrativo_de_primeira_instancia$data),
+                                                         max(contencioso_administrativo_de_primeira_instancia$data),
+                                                         by = "month"),
+                                         value = as.vector(decomp$trend))
+
+df_trend_valores_totais %>%
+  readr::write_csv("df_trend_valores_totais.csv")
+
+
+df_seasonal_valores_totais <- data.frame(date = seq.Date(min(contencioso_administrativo_de_primeira_instancia$data),
+                                                     max(contencioso_administrativo_de_primeira_instancia$data),
+                                                     by = "month"),
+                                     value = as.vector(decomp$seasonal))
+
+df_seasonal_valores_totais %>%
+  readr::write_csv("df_seasonal_valores_totais.csv")
+
+
+
 
 df_dados_hist<-
   tibble(data=contencioso_administrativo_de_primeira_instancia$data,
@@ -150,7 +183,9 @@ df_dados_hist<-
 
 df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2023-05-01" )
 
-
+df_valores_constantes %>%
+  mutate(valor = round(valor/10^9,2)) %>%
+  readr::write_csv2("valores_totais_ipca.csv")
 
 serie_temporal_valor_total <- ts(df_valores_constantes$valor,
                                 frequency = 12,
@@ -160,6 +195,8 @@ serie_temporal_valor_total <- ts(df_valores_constantes$valor,
 decomp <- decompose(serie_temporal_valor_total)
 
 autoplot(decomp)
+
+
 
 
 df_dados_hist<-
@@ -193,3 +230,22 @@ contencioso_administrativo_de_primeira_instancia %>%
     panel.grid = element_blank(),
     legend.position = "bottom"
   )
+
+
+
+
+  # Exemplo de objeto de série temporal (ts) com frequência mensal
+  ts_data <- ts(c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120,
+                  130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240),
+                start = c(2010, 1), frequency = 12)
+
+  # Converter o objeto ts em um dataframe
+  start_date <- as.Date("2010-01-01")# as.Date(paste0(start(ts_data), "-01"))
+  end_date <- as.Date("2011-12-01")# as.Date(paste0(end(ts_data), "-01"))
+  df <- data.frame(date = seq.Date(start_date, end_date, by = "month"),
+                   value = as.vector(ts_data))
+
+  # Exibir o dataframe resultante
+  print(df)
+
+

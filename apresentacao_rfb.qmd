@@ -1,0 +1,207 @@
+---
+title: "Séries temporais Contencioso Administrativo de 1ª instância"
+author: "Fernando Barbalho"
+format: pptx
+editor: visual
+execute: 
+  cache: true
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+
+library(forecast)
+library(lubridate)
+
+
+#Função para deflacionar valores usando o IPCA
+
+calcula_valor_constante <- function(df_dados_hist, data_constante ){
+  #Argumentos
+  #df_dados_hist: dataframe em que as duas primeiras colunas são formadas por uma data (Y-m-d) e um valor
+  #data_constante: data para gerar valor constante. Formato da data: Y-m-d
+
+  #Por enquanto as datas estão limitadas à da série temporal baixada do IPCA Total do portal de dados abertos do BACEN
+  #Essa série começa em 1992-01-01
+
+  library(dplyr)
+  library(lubridate)
+
+  library(httr)
+  library(jsonlite)
+
+
+  names(df_dados_hist)[1:2]<- c("data","valor")
+
+  ###faz a conversão para real
+  df_dados_hist<-
+    df_dados_hist %>%
+    mutate(valor= case_when(
+      data>= ymd("1992-01-01") & data<= ymd("1993/07/31") ~ valor/(1000^2*2.75),
+      data>= ymd("1993-08-01") & data<= ymd("1994/06/30") ~ valor/(1000*2.75),
+      TRUE ~ valor
+    ))
+
+  #################Cálculos econômicos
+  #Dados do IPCA com a série temporal
+
+  url<- "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4449/dados?formato=json"
+
+
+  resposta <- GET(url)
+  IPCA_historico <- content(resposta, "text")
+  IPCA_historico <- fromJSON(IPCA_historico, flatten = TRUE)
+
+
+  IPCA_historico$valor <- as.numeric(IPCA_historico$valor)
+
+  # IPCA_historico <- read_delim("bcdata.sgs.4449.csv",
+  #                              ";", escape_double = FALSE, locale = locale(decimal_mark = ",",
+  #                                                                          grouping_mark = "."), trim_ws = TRUE)
+  IPCA_historico<-
+    IPCA_historico %>%
+    filter(data<= ymd(data_constante))
+
+  #################Cálculos econômicos
+  #Calcula o número índice para todos os meses da série temporal
+  num_index<-
+    map_dbl(1:NROW(IPCA_historico), function(a_i){
+      if (a_i==1){
+        100
+      }else {
+        100+ prod(1+IPCA_historico$valor[1:a_i]/100)
+      }
+
+    })
+
+  IPCA_historico$num_indice <- num_index
+
+  num_indice_constante<-
+    (IPCA_historico%>%
+       filter(dmy(data)== ymd(data_constante)))$num_indice
+
+
+  #################Cálculos econômicos
+  #Acrescenta a coluna do número índice
+  IPCA_historico$num_indice <- num_index
+
+  IPCA_historico_trab<-
+    IPCA_historico %>%
+    mutate(data= dmy(data))  %>%
+    filter(data %in% df_dados_hist$data) %>%
+    select(data,num_indice)
+
+  df_dados_hist %>%
+    inner_join(IPCA_historico_trab) %>%
+    mutate(valor = valor * (num_indice_constante/num_indice)) %>%
+    select(data, valor)
+
+}
+
+```
+
+## Série temporal de quantidade de processos
+
+-   O menor valor da série temporal ocorreu em abril de 2015, atingindo 200.702 processos.
+
+-   O pico máximo da série temporal foi registrado em maio de 2019, alcançando 270.495 processos.
+
+-   Após o pico, o menor valor registrado foi em janeiro de 2021, com 240.181 processos.
+
+-    O valor mais recente da série temporal é de 244.891 processos, registrado em maio de 2023.
+
+```{r}
+
+contencioso_administrativo_de_primeira_instancia %>%
+  ggplot() +
+  geom_line(aes(x=data, y= quantidade_de_processos), color="black") +
+  theme_light()+
+  theme(
+    panel.grid = element_blank(),
+
+  ) +
+  labs(
+    title =  "Evolução da quantidade",
+    y= "Quantidade de processos",
+    x= ""
+  )
+
+
+```
+
+## Série temporal de quantidade de processos
+
+1.  **Tendência** Crescimento acelerado até 2019: Entre 2015 e 2019, houve um período de crescimento acelerado, com taxas de aumento mais elevadas em comparação com os anos anteriores.
+
+2.  **Tendência** Estabilidade recente: Após o pico em 2019, é possível observar que os valores caíram um pouco e depois voltaram aos níveis anteriores. É importante observar que a falta de dados para 2023 não permite uma análise completa do cenário atual.
+
+3.  **Sazonalidade**: O padrão de variação indica que os valores atingem o pico no início de cada ano e diminuem ao longo dos meses, principalmente no segundo semestre
+
+```{r}
+serie_temporal_quantidade <- ts(contencioso_administrativo_de_primeira_instancia$quantidade_de_processos,
+                     frequency = 12,
+                     start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
+                               month(min(contencioso_administrativo_de_primeira_instancia$data))))
+
+decomp <- decompose(serie_temporal_quantidade)
+
+autoplot(decomp)
+
+```
+
+## Série temporal de valores totais
+
+-   Identificamos que o menor valor da série foi de R\$ 121,96 bilhões registrado em setembro de 2020, que antecede uma janela de crescimento importante .
+
+-   Por outro lado, observamos que o maior valor alcançado na série foi de R\$ 309,64 bilhões em maio de 2023.
+
+-   Por fim, o último valor registrado na série foi de R\$ 268,82 em maio de 2023, mostrando uma curva ascendente até o final do período analisado.
+
+```{r}
+df_dados_hist<-
+  tibble(data=contencioso_administrativo_de_primeira_instancia$data,
+         valor =contencioso_administrativo_de_primeira_instancia$valor_total_dos_processos)
+
+df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2023-05-01" )
+
+
+df_valores_constantes %>%
+  ggplot() +
+  geom_line(aes(x=data, y= valor/10^9), color="black") +
+  theme_light()+
+  theme(
+    panel.grid = element_blank(),
+
+  ) +
+  labs(
+    title =  "Evolução de valores totais",
+    subtitle = "Valores atualizados pelo IPCA",
+    y= "Valores totais em R$(bi)",
+    x= ""
+  )
+
+```
+
+## Série temporal de valores totais
+
+-   **Tendência:** Observa-se uma tendência de crescimento até o segundo semestre de 2015, quando ocorre uma reversão caracterizada por uma queda gradual e constante que se verifica até o segundo semestre de 2021. A partir daí ocorre uma tendência decrescimento forte até o final do período analisado
+
+-   
+
+```{r}
+
+df_valores_constantes$valor <- df_valores_constantes$valor / 10^9
+
+
+serie_temporal_valor_total <- ts(df_valores_constantes$valor,
+                                frequency = 12,
+                                start = c(year(min(contencioso_administrativo_de_primeira_instancia$data)),
+                                          month(min(contencioso_administrativo_de_primeira_instancia$data))))
+
+decomp <- decompose(serie_temporal_valor_total)
+
+autoplot(decomp)
+
+```
