@@ -14,6 +14,7 @@ execute:
 
 library(forecast)
 library(lubridate)
+library(tidyverse)
 
 
 #Função para deflacionar valores usando o IPCA
@@ -110,7 +111,7 @@ calcula_valor_constante <- function(df_dados_hist, data_constante ){
 
 -   Após o pico, o menor valor registrado foi em janeiro de 2021, com 240.181 processos.
 
--    O valor mais recente da série temporal é de 244.891 processos, registrado em maio de 2023.
+-   O valor mais recente da série temporal é de 244.891 processos, registrado em maio de 2023.
 
 ```{r}
 
@@ -256,5 +257,40 @@ serie_temporal_valor_julgado <- ts(df_valores_constantes$valor,
 decomp <- decompose(serie_temporal_valor_julgado)
 
 autoplot(decomp)
+
+```
+
+## Análise dos tempos de julgamento
+
+-   As categorias destacadas na base de dados em uma visão geral, apresentam médias de tempos de de julgamento bastante inferiores ao que observa-se no conjunto de todos os processos
+
+-   As medidas cautelares ou arroalmento de bens apresentam méidas de tempos de julgamento abaixo do que é aferido no cojunto de todos os processos mas se manifesta de forma superior a quase todas as outras categorias, com exceção dos programas OEA e CONFIA
+
+-   Os programas OEA e Confia inciam-se em 2023 e apresentam tempos maiores do que a média de todos os processso
+
+```{r}
+contencioso_administrativo_de_primeira_instancia %>%
+  select(data, starts_with("tempo")) %>%
+  rename(
+    todos_processos = tempo_medio_em_dias_todos_os_processos,
+    processos_prioritarios = tempo_medio_em_dias_processos_prioritarios,
+    medida_cautelar_ou_arrolamento_bens = tempo_medio_processos_de_medida_cautelar_fiscal_ou_arrolamento_de_bens,
+    idosos_pcd = tempo_medio_processos_de_pessoas_maiores_de_60_anos_ou_com_molestia_grave_ou_com_deficiencia,
+    valores_15_mi = tempo_medio_processos_com_valor_acima_de_r_15_milhoes,
+    fins_penais = tempo_medio_processos_com_representacao_fiscal_para_fins_penais,
+    indeferimento_simples= tempo_medio_processos_relativos_a_exclusao_indeferimento_do_simples,
+    valores_10_mi = tempo_medio_processos_de_contribuinte_diferenciado_e_com_valor_acima_r_10_milhoes,
+    oea_confia = tempo_medio_processos_do_programa_oea_programa_confia
+  ) %>%
+  pivot_longer(cols=-data, names_to = "tempo", values_to = "valor") %>%
+  mutate(tempo = str_replace_all(tempo,"_", " ")) %>%
+  ggplot() +
+  geom_line(aes(x=data, y= valor)) +
+  theme_light() +
+  facet_wrap(tempo~.)
+  theme(
+    panel.grid = element_blank(),
+    legend.position = "bottom"
+  )
 
 ```
