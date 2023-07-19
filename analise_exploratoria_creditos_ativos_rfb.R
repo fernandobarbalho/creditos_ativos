@@ -1,5 +1,6 @@
 library(tidyverse)
 library(plotly)
+library(ggrepel)
 
 
 df_dados_hist<-
@@ -78,6 +79,29 @@ fab_zero<-
          vl_total <= 1)
 
 
+fab_fevereiro<-
+  creditos_ativos %>%
+  filter(data == "2023-02-01")
+
+
+fab_marco<-
+  creditos_ativos %>%
+  filter(data == "2023-03-01")
+
+
+creditos_ativos %>%
+  #filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
+  ggplot() +
+  geom_boxplot(aes(x=as.character(data),vl_total)) +
+  scale_y_log10()
+
+
+creditos_ativos %>%
+  #filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
+  ggplot() +
+  geom_boxplot(aes(x=as.character(data),vl_total))
+
+
 
 creditos_ativos %>%
   filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
@@ -85,3 +109,34 @@ creditos_ativos %>%
   geom_boxplot(aes(x=as.character(data),vl_total)) +
   scale_y_log10()
 
+
+max_valor<-
+  creditos_ativos %>%
+  filter(data <= "2023-02-01" ) %>%
+  group_by(data) %>%
+  summarise(
+    vl_total = max(vl_total)
+  ) %>%
+  inner_join(
+    creditos_ativos %>%
+      select(data, vl_total,uf, tipo_contribuinte, situacao)
+  )
+
+creditos_ativos %>%
+  ggplot() +
+  geom_boxplot(aes(x=as.character(data),vl_total)) +
+  geom_text_repel (data= max_valor, aes(x=as.character(data),y= vl_total, label= paste(uf, tipo_contribuinte,  situacao, sep = "-")), size=2)
+
+
+
+creditos_ativos %>%
+  #filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
+  ggplot() +
+  geom_boxplot(aes(x=as.character(data),vl_total)) +
+  scale_y_log10()
+
+creditos_ativos %>%
+  ggplot() +
+  geom_boxplot(aes(x=as.character(data),vl_total)) +
+  geom_text_repel (data= max_valor, aes(x=as.character(data),y= vl_total, label= paste(uf, tipo_contribuinte,  situacao, sep = "-")), size=2)+
+  scale_y_log10()
