@@ -17,6 +17,24 @@ library(lubridate)
 library(tidyverse)
 
 
+contencioso_administrativo_de_primeira_instancia <- read_delim("data/contencioso-administrativo-de-primeira-instancia.csv",
+                                                               delim = ";", escape_double = FALSE, col_types = cols(`Data da publicação` = col_date(format = "%d/%m/%Y")),
+                                                               locale = locale(decimal_mark = ",", grouping_mark = ".",
+                                                                               encoding = "Latin1"), trim_ws = TRUE)
+
+
+contencioso_administrativo_de_primeira_instancia <-  janitor::clean_names(contencioso_administrativo_de_primeira_instancia)
+
+
+contencioso_administrativo_de_primeira_instancia$data<-
+  str_c("01-",contencioso_administrativo_de_primeira_instancia$mes_ano)
+
+contencioso_administrativo_de_primeira_instancia$data <-
+  as.Date(contencioso_administrativo_de_primeira_instancia$data, format = "%d-%B-%y")
+
+
+
+
 #Função para deflacionar valores usando o IPCA
 
 calcula_valor_constante <- function(df_dados_hist, data_constante ){
@@ -156,7 +174,7 @@ autoplot(decomp)
 
 -   Identificamos que o menor valor da série foi de R\$ 121,96 bilhões registrado em setembro de 2020, que antecede uma janela de crescimento importante .
 
--   Por outro lado, observamos que o maior valor alcançado na série foi de R\$ 309,64 bilhões em maio de 2023.
+-   Por outro lado, observamos que o maior valor alcançado na série foi de R\$ 309,64 bilhões em março de 2016.
 
 -   Por fim, o último valor registrado na série foi de R\$ 268,82 em maio de 2023, mostrando uma curva ascendente até o final do período analisado.
 
@@ -189,7 +207,7 @@ df_valores_constantes %>%
 
 -   **Tendência:** Observa-se uma tendência de crescimento até o segundo semestre de 2015, quando ocorre uma reversão caracterizada por uma queda gradual e constante que se verifica até o segundo semestre de 2021. A partir daí ocorre uma tendência decrescimento forte até o final do período analisado
 
--   **Sazonalidade:** A comportamento da sazonalidade acompanha o que foi observado na curva de quantidade, ou seja: valores elevados no primeiro trimestre de cada ano, seguida de uma marcante redução nos valores principalmente no segundo semestre nos anos observados.
+-   **Sazonalidade:** O comportamento da sazonalidade acompanha o que foi observado na curva de quantidade, ou seja: valores elevados no primeiro trimestre de cada ano, seguida de uma marcante redução nos valores principalmente no segundo semestre nos anos observados.
 
 ```{r}
 
@@ -262,9 +280,9 @@ autoplot(decomp)
 
 ## Análise dos tempos de julgamento
 
--   As categorias destacadas na base de dados em uma visão geral, apresentam médias de tempos de de julgamento bastante inferiores ao que observa-se no conjunto de todos os processos
+-   As categorias destacadas na base de dados, apresentam médias de tempos de julgamento bastante inferiores ao que observa-se no conjunto de todos os processos nas análises das séries temporais
 
--   As medidas cautelares ou arroalmento de bens apresentam méidas de tempos de julgamento abaixo do que é aferido no cojunto de todos os processos mas se manifesta de forma superior a quase todas as outras categorias, com exceção dos programas OEA e CONFIA
+-   As medidas cautelares ou arrolamento de bens apresentam médias de tempos de julgamento abaixo do que é aferido no cojunto de todos os processos mas se manifesta de forma superior a quase todas as outras categorias, com exceção dos programas OEA e CONFIA
 
 -   Os programas OEA e Confia inciam-se em 2023 e apresentam tempos maiores do que a média de todos os processso
 
@@ -287,7 +305,7 @@ contencioso_administrativo_de_primeira_instancia %>%
   ggplot() +
   geom_line(aes(x=data, y= valor)) +
   theme_light() +
-  facet_wrap(tempo~.)
+  facet_wrap(tempo~.)+
   theme(
     panel.grid = element_blank(),
     legend.position = "bottom"

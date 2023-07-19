@@ -198,6 +198,8 @@ autoplot(decomp)
 
 
 
+###Análise de valores dois processos julgados
+
 
 df_dados_hist<-
   tibble(data=contencioso_administrativo_de_primeira_instancia$data,
@@ -205,6 +207,9 @@ df_dados_hist<-
 
 df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2023-05-01"  )
 
+df_valores_constantes %>%
+  mutate(valor = valor/10^9) %>%
+  readr::write_csv("valores_totais_julgados.csv")
 
 
 serie_temporal_valor_julgado <- ts(df_valores_constantes$valor,
