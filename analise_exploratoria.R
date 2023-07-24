@@ -204,15 +204,22 @@ corte_temporal_pj<-
 
 (1-(6303/4156762)) * (1-(5193/4103410))
 
-fab<- tibble(tempo = km$time, survival = km$surv, sobreviventes = km$n.risk, eventos= km$n.event)
+fab<- tibble(tempo = km$time, survival = km$surv, number_at_risk = km$n.risk, eventos= km$n.event, censura= km$n.censor)
 
 fab$eventos_acum <- cumsum(fab$eventos)
-
+fab$censura_acum <- cumsum(fab$censura)
 
 sum(km$n.event)
 
 dados_longitudinais_trabalho_full %>%
+  filter(status == "1") %>%
   ggplot() +
   geom_histogram(aes(x=diferenca_max_meses), color= "white")
 
 
+dados_longitudinais_trabalho_full %>%
+  filter(status == "0") %>%
+  ggplot() +
+  geom_histogram(aes(x=diferenca_max_meses), color= "white")
+
+km

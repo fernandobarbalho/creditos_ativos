@@ -1,0 +1,125 @@
+---
+title: "Questionamento sobre créditos ativos"
+author: "Fernando Almeida Barbalho"
+date: '2023-07-24'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(tidyverse)
+library(plotly)
+library(ggrepel)
+
+
+knitr::opts_chunk$set(echo = TRUE, message = TRUE, warning = TRUE)
+
+creditos_ativos <- readRDS("~/Github/creditos_ativos/creditos_ativos_rfb.RDS")
+```
+
+
+Estou trabalhando com os dados de créditos ativos que estão disponíveis nos dados abertos da RFB.
+
+Uma das primeiras análises que eu fiz foi uma visão da série temporal analisando o valor total dos créditos ao longo dos meses. Daí fiz esse gráfico abaixo
+
+```{r}
+grafico<-
+creditos_ativos %>%
+  group_by(data) %>%
+  summarise(valor = sum(vl_total)) %>%
+  ggplot() +
+  geom_line(aes(x=data, y= valor/10^9), color="black") +
+  theme_light()+
+  theme(
+    panel.grid = element_blank(),
+
+  ) +
+  ylim(0, 3000) +
+  labs(
+    title =  "Evolução de valores totais",
+    y= "Valores totais em R$(bi)",
+    x= ""
+  )
+
+plotly::ggplotly(grafico)
+```
+
+
+Como se pode ver no gráfico acima o valor sai de aproximadamente 2,8 trilhões em fevereiro de 2023 para aproximadamente 2,4 trilhões no mês seguinte.
+
+Fiz um desdobramento desses valores por tipo de tributo e encontrei a seguinte situação descrita nos gráficos a seguir.
+
+```{r}
+max_valor<-
+  creditos_ativos %>%
+  filter(data <= "2023-02-01" ) %>%
+  group_by(data) %>%
+  summarise(
+    vl_total = max(vl_total)
+  ) %>%
+  inner_join(
+    creditos_ativos %>%
+      select(data, vl_total,uf, grupo_tributo, situacao)
+  )
+
+creditos_ativos %>%
+  ggplot() +
+  geom_boxplot(aes(x=as.character(data),y = vl_total/10^9)) +
+  geom_text_repel (data= max_valor,
+                   aes(x=as.character(data),
+                       y= vl_total/10^9,
+                       label= paste(uf, grupo_tributo,  situacao, sep = "-")),
+                   size=2) +
+  theme_light()+
+  labs(y= "Valores em R$ bi",
+       x="",
+       title= "Distribuição dos valores de créditos ativos")
+
+```
+
+```{r}
+creditos_ativos %>%
+  ggplot() +
+  geom_boxplot(aes(x=as.character(data),y = vl_total/10^9)) +
+  geom_text_repel (data= max_valor,
+                   aes(x=as.character(data),
+                       y= vl_total/10^9,
+                       label= paste(uf, grupo_tributo,  situacao, sep = "-")),
+                   size=2) +
+  theme_light()+
+  scale_y_log10() +
+  labs(y= "Valores em R$ bi",
+       x="",
+       title= "Distribuição dos valores de créditos ativos")
+
+```
+
+Como se vê na análise conjunta dos dois gráficos de box-plot acima o comportamento da série é bastante homogênea durante os meses analisados. O que diferencia é o ponto que marca o outlier mais extremo que refere-se aos valores acumulados para IRPF em situação devedora no estado de São Paulo. Esses valores ultrapassam os 300 bilhões até Fevereiro de 2023. Quando chega em março de 2023 nota-se que não há outliers maiores que 300 bilhões. Se observarmos o comportamento apenas desse tipo enquadramento veremos a seguinte curva.
+
+```{r}
+grafico<-
+creditos_ativos %>%
+  filter(uf=="SP",
+         situacao == "DEVEDOR",
+         grupo_tributo == "IRPF") %>%
+  group_by(data) %>%
+  summarise(valor = sum(vl_total)) %>%
+  ggplot() +
+  geom_line(aes(x=data, y= valor/10^9), color="black") +
+  theme_light()+
+  theme(
+    panel.grid = element_blank(),
+
+  ) +
+ 
+  labs(
+    title =  "Evolução de valores totais SP-DEVEDOR-IRPF",
+    y= "Valores totais em R$(bi)",
+    x= ""
+  )
+
+plotly::ggplotly(grafico)
+```
+
+
+Como se vê no gráfico acima, o total de valores em créditos ativos para a combinação: SP, IRPF e Devedor sai de aproximadamente  R$ 335 bilhões em fevereiro de 2023 para R$ 4,4 bilhões em março de 2023

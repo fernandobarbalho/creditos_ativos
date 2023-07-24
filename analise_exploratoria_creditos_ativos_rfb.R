@@ -124,8 +124,16 @@ max_valor<-
 
 creditos_ativos %>%
   ggplot() +
-  geom_boxplot(aes(x=as.character(data),vl_total)) +
-  geom_text_repel (data= max_valor, aes(x=as.character(data),y= vl_total, label= paste(uf, tipo_contribuinte,  situacao, sep = "-")), size=2)
+  geom_boxplot(aes(x=as.character(data),y = vl_total/10^9)) +
+  geom_text_repel (data= max_valor,
+                   aes(x=as.character(data),
+                       y= vl_total/10^9,
+                       label= paste(uf, tipo_contribuinte,  situacao, sep = "-")),
+                   size=2) +
+  theme_light()+
+  labs(y= "Valores em R$ bi",
+       x="",
+       title= "Distribuição dos valores de créditos ativos")
 
 
 
@@ -137,6 +145,20 @@ creditos_ativos %>%
 
 creditos_ativos %>%
   ggplot() +
-  geom_boxplot(aes(x=as.character(data),vl_total)) +
-  geom_text_repel (data= max_valor, aes(x=as.character(data),y= vl_total, label= paste(uf, tipo_contribuinte,  situacao, sep = "-")), size=2)+
+  geom_boxplot(aes(x=as.character(data),y = vl_total)) +
+  geom_text_repel (data= max_valor,
+                   aes(x=as.character(data),
+                       y= vl_total,
+                       label= paste(uf, tipo_contribuinte,  situacao, sep = "-")),
+                   size=2) +
+  theme_light()+
+  labs(y= "Valores em R$ bi",
+       x="",
+       title= "Distribuição dos valores de créditos ativos") +
   scale_y_log10()
+
+
+IPCA_historico %>%
+  ggplot() +
+  geom_line(aes(x=as.Date(paste(str_sub(data,7,10),str_sub(data,4,5),str_sub(data,1,2), sep = "-") ),y=valor)) +
+  labs(x="")
