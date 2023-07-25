@@ -158,7 +158,67 @@ creditos_ativos %>%
   scale_y_log10()
 
 
-IPCA_historico %>%
-  ggplot() +
-  geom_line(aes(x=as.Date(paste(str_sub(data,7,10),str_sub(data,4,5),str_sub(data,1,2), sep = "-") ),y=valor)) +
-  labs(x="")
+top_cnae_sections<-
+  (creditos_ativos %>%
+  mutate(cnae_secao_descr = ifelse(cnae_secao_descr=="N/A","Pessoa Física",stringr::str_to_title(cnae_secao_descr) )) %>%
+  group_by(cnae_secao_descr) %>%
+  summarise(
+    vl_total = sum(vl_total)
+  ) %>%
+  slice_max(vl_total, n=8))$cnae_secao_descr
+
+top_tax_groups<-
+  (creditos_ativos %>%
+     group_by(grupo_tributo) %>%
+     summarise(
+       vl_total = sum(vl_total)
+     ) %>%
+     slice_max(vl_total, n=8))$grupo_tributo
+
+grouped<-
+  creditos_ativos %>%
+  mutate(cnae_secao_descr = ifelse(cnae_secao_descr=="N/A","Pessoa Física",stringr::str_to_title(cnae_secao_descr) )) %>%
+  filter(cnae_secao_descr %in% top_cnae_sections,
+         grupo_tributo %in% top_tax_groups) %>%
+  group_by(cnae_secao_descr, grupo_tributo) %>%
+  summarise(
+    vl_total = sum(vl_total)
+  ) %>%
+  ungroup()
+
+# Load the necessary library
+library(networkD3)
+
+# Define the nodes
+nodes <- data.frame(posicao=0:15, name = c(as.character(top_cnae_sections), as.character(top_tax_groups)))
+
+source_obj<-
+  grouped %>%
+  rename(name = cnae_secao_descr) %>%
+  inner_join(nodes) %>%
+  select(posicao)
+
+
+target_obj<-
+  grouped %>%
+  rename(name = grupo_tributo) %>%
+  inner_join(nodes) %>%
+  select(posicao)
+
+
+# Define the links
+links <- data.frame(
+  source = source_obj$posicao, # -1 because R is 1-indexed while Python is 0-indexed
+  target = target_obj$posicao,
+  value = grouped$vl_total
+)
+
+
+
+
+
+# Create the Sankey diagram
+sankeyNetwork(Links = links, Nodes = nodes, Source = 'source',
+              Target = 'target', Value = 'value', NodeID = 'name',
+              fontSize = 12, nodeWidth = 30)
+
