@@ -158,6 +158,11 @@ creditos_ativos %>%
   scale_y_log10()
 
 
+
+###########Grárficos de sankey
+
+###Foco no tributo
+
 top_cnae_sections<-
   (creditos_ativos %>%
   mutate(cnae_secao_descr = ifelse(cnae_secao_descr=="N/A","Pessoa Física",stringr::str_to_title(cnae_secao_descr) )) %>%
@@ -175,7 +180,7 @@ top_tax_groups<-
      ) %>%
      slice_max(vl_total, n=8))$grupo_tributo
 
-grouped<-
+grouped_cnae<-
   creditos_ativos %>%
   mutate(cnae_secao_descr = ifelse(cnae_secao_descr=="N/A","Pessoa Física",stringr::str_to_title(cnae_secao_descr) )) %>%
   filter(cnae_secao_descr %in% top_cnae_sections,
@@ -193,14 +198,14 @@ library(networkD3)
 nodes <- data.frame(posicao=0:15, name = c(as.character(top_cnae_sections), as.character(top_tax_groups)))
 
 source_obj<-
-  grouped %>%
+  grouped_cnae %>%
   rename(name = cnae_secao_descr) %>%
   inner_join(nodes) %>%
   select(posicao)
 
 
 target_obj<-
-  grouped %>%
+  grouped_cnae %>%
   rename(name = grupo_tributo) %>%
   inner_join(nodes) %>%
   select(posicao)
@@ -210,21 +215,19 @@ target_obj<-
 links <- data.frame(
   source = source_obj$posicao, # -1 because R is 1-indexed while Python is 0-indexed
   target = target_obj$posicao,
-  value = grouped$vl_total
+  value = grouped_cnae$vl_total
 )
-
-
 
 
 
 # Create the Sankey diagram
 sankeyNetwork(Links = links, Nodes = nodes, Source = 'source',
               Target = 'target', Value = 'value', NodeID = 'name',
-              fontSize = 12, nodeWidth = 30)
+              fontSize = 12, nodeWidth = 30, iterations = 0)
 
 
 
-grouped<-
+grouped_sit<-
   creditos_ativos %>%
   mutate(cnae_secao_descr = ifelse(cnae_secao_descr=="N/A","Pessoa Física",stringr::str_to_title(cnae_secao_descr) )) %>%
   filter(grupo_tributo %in% top_tax_groups) %>%
@@ -235,18 +238,28 @@ grouped<-
   ungroup()
 
 
+situacao_desc<-
+  (creditos_ativos %>%
+     group_by(situacao) %>%
+     summarise(valor = sum(vl_total)) %>%
+     mutate(situacao = reorder(situacao, valor) ) %>%
+     arrange(desc(situacao))
+  )$situacao
+
+
+
 # Define the nodes
-nodes <- data.frame(posicao=0:11, name = c(top_tax_groups, unique(creditos_ativos$situacao)))
+nodes <- data.frame(posicao=0:11, name = c(top_tax_groups, as.character(situacao_desc)))
 
 source_obj<-
-  grouped %>%
+  grouped_sit %>%
   rename(name = grupo_tributo) %>%
   inner_join(nodes) %>%
   select(posicao)
 
 
 target_obj<-
-  grouped %>%
+  grouped_sit %>%
   rename(name = situacao) %>%
   inner_join(nodes) %>%
   select(posicao)
@@ -262,8 +275,7 @@ links <- data.frame(
 
 
 
-
 # Create the Sankey diagram
 sankeyNetwork(Links = links, Nodes = nodes, Source = 'source',
               Target = 'target', Value = 'value', NodeID = 'name',
-              fontSize = 12, nodeWidth = 30)
+              fontSize = 12, nodeWidth = 30, iterations = 0)
