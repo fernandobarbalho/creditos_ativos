@@ -18,3 +18,8 @@ saveRDS(creditos_ativos, "creditos_ativos_rfb.RDS")
 creditos_ativos%>%
   slice_sample(n=100000) %>%
   readr::write_csv("sample_creditos_ativos.csv")
+
+
+creditos_ativos %>%
+  filter(data== "2023-05-01") %>%
+  readr::write_csv("creditos_ativos_maio_2023.csv")

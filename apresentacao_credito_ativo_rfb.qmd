@@ -1,168 +1,48 @@
+---
+title: "Créditos ativos - RFB"
+author: "Fernando Barbalho"
+format: html
+editor: visual
+execute: 
+  cache: true
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+library(networkD3)
 library(tidyverse)
-library(plotly)
-library(ggrepel)
+library(questionr)
 
+creditos_ativos <- readRDS("creditos_ativos_rfb.RDS")
+```
 
-df_dados_hist<-
-  tibble(data= creditos_ativos$data,
-         valor = creditos_ativos$vl_total)
+## Créditos ativos da RFB: fast-facts para maio de 2023
 
-df_valores_constantes<- calcula_valor_constante(df_dados_hist, "2023-05-01" )
+1.  O valor total dos créditos ativos é de aproximadamente R\$ 2,44 trilhões.
 
+2.  O estado com o maior valor acumulado é São Paulo (SP), com um valor de aproximadamente R\$ 1,22 trilhão.
 
-creditos_ativos$valor_constante<- df_valores_constantes$valor
+3.  O estado com o menor valor acumulado é Roraima (RR), com um valor de aproximadamente R\$ 1,67 bilhão.
 
-creditos_ativos %>%
-  group_by(data) %>%
-  summarise(valor = sum(valor_constante)) %>%
-  ggplot() +
-  geom_line(aes(x=data, y= valor/10^9), color="black") +
-  theme_light()+
-  theme(
-    panel.grid = element_blank(),
+4.  Há um total de 19 diferentes tipos de tributos presentes nos dados.
 
-  ) +
-  ylim(0, 3000) +
-  labs(
-    title =  "Evolução de valores totais",
-    subtitle = "Valores atualizados pelo IPCA",
-    y= "Valores totais em R$(bi)",
-    x= ""
-  )
+5.  Existem 19 diferentes tipos de CNAEs (Classificação Nacional de Atividades Econômicas) nos dados.
 
+## Associação entre CNAES e tributos (valores em R\$ bi)
 
-creditos_ativos %>%
-  group_by(data) %>%
-  summarise(valor = sum(vl_total)) %>%
-  ggplot() +
-  geom_line(aes(x=data, y= valor/10^9), color="black") +
-  theme_light()+
-  theme(
-    panel.grid = element_blank(),
+-   Seleção das seções CNAE mais representativas cuja soma acumulada da porcentagem do valor total de créditos ativos é menor ou igual a 80%.
 
-  ) +
-  ylim(0, 3000) +
-  labs(
-    title =  "Evolução de valores totais",
-    subtitle = "Valores atualizados pelo IPCA",
-    y= "Valores totais em R$(bi)",
-    x= ""
-  )
+-   Seleção dos tipos de tributos mais representativos cuja soma acumulada da porcentagem do valor total de créditos ativosé menor ou igual a 80%.
 
+-   Há coerência na maioria das correspondência entre os cnaes e tipos de tributos na ordem decrescente de volume de valores
 
+-   98% dos valores de Administração pública estão associados a Contribuição Previdenciária
 
-grafico<-
-creditos_ativos %>%
-  group_by(data) %>%
-  summarise(valor = sum(vl_total)) %>%
-  ggplot() +
-  geom_line(aes(x=data, y= valor/10^9), color="black") +
-  theme_light()+
-  theme(
-    panel.grid = element_blank(),
+-    46% dos valores de CSLL vêm de atividades financeiras
 
-  ) +
-  ylim(0, 3000) +
-  labs(
-    title =  "Evolução de valores totais",
-    subtitle = "Valores atualizados pelo IPCA",
-    y= "Valores totais em R$(bi)",
-    x= ""
-  )
-
-plotly::ggplotly(grafico)
-
-
-fab_zero<-
-  creditos_ativos %>%
-  filter(data == "2023-02-01",
-         vl_total <= 1)
-
-
-fab_fevereiro<-
-  creditos_ativos %>%
-  filter(data == "2023-02-01")
-
-
-fab_marco<-
-  creditos_ativos %>%
-  filter(data == "2023-03-01")
-
-
-creditos_ativos %>%
-  #filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
-  ggplot() +
-  geom_boxplot(aes(x=as.character(data),vl_total)) +
-  scale_y_log10()
-
-
-creditos_ativos %>%
-  #filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
-  ggplot() +
-  geom_boxplot(aes(x=as.character(data),vl_total))
-
-
-
-creditos_ativos %>%
-  filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
-  ggplot() +
-  geom_boxplot(aes(x=as.character(data),vl_total)) +
-  scale_y_log10()
-
-
-max_valor<-
-  creditos_ativos %>%
-  filter(data <= "2023-02-01" ) %>%
-  group_by(data) %>%
-  summarise(
-    vl_total = max(vl_total)
-  ) %>%
-  inner_join(
-    creditos_ativos %>%
-      select(data, vl_total,uf, tipo_contribuinte, situacao)
-  )
-
-creditos_ativos %>%
-  ggplot() +
-  geom_boxplot(aes(x=as.character(data),y = vl_total/10^9)) +
-  geom_text_repel (data= max_valor,
-                   aes(x=as.character(data),
-                       y= vl_total/10^9,
-                       label= paste(uf, tipo_contribuinte,  situacao, sep = "-")),
-                   size=2) +
-  theme_light()+
-  labs(y= "Valores em R$ bi",
-       x="",
-       title= "Distribuição dos valores de créditos ativos")
-
-
-
-creditos_ativos %>%
-  #filter(data %in% c(as.Date("2023-02-01") , as.Date("2023-03-01"))) %>%
-  ggplot() +
-  geom_boxplot(aes(x=as.character(data),vl_total)) +
-  scale_y_log10()
-
-creditos_ativos %>%
-  ggplot() +
-  geom_boxplot(aes(x=as.character(data),y = vl_total)) +
-  geom_text_repel (data= max_valor,
-                   aes(x=as.character(data),
-                       y= vl_total,
-                       label= paste(uf, tipo_contribuinte,  situacao, sep = "-")),
-                   size=2) +
-  theme_light()+
-  labs(y= "Valores em R$ bi",
-       x="",
-       title= "Distribuição dos valores de créditos ativos") +
-  scale_y_log10()
-
-
-
-###########Grárficos de sankey
-
-###Foco no tributo
-
+```{r}
 total_credito<- sum(creditos_ativos$vl_total[creditos_ativos$data == max(creditos_ativos$data)])
 
 top_cnae_sections<-
@@ -198,6 +78,7 @@ grouped_cnae<-
   summarise(
     vl_total = sum(vl_total)
   ) %>%
+  mutate(vl_total = vl_total/10^9) %>%
   ungroup()
 
 # Load the necessary library
@@ -234,9 +115,23 @@ sankeyNetwork(Links = links, Nodes = nodes, Source = 'source',
               Target = 'target', Value = 'value', NodeID = 'name',
               fontSize = 12, nodeWidth = 30, iterations = 0)
 
+```
 
+## Associação entre tributos e situação (valores em R\$ bi)
 
-#sankey grupo tributos e situação
+-   Seleção dos tipos de tributos mais representativas cuja soma acumulada da porcentagem do valor total de créditos ativos é menor ou igual a 80%.
+
+-   Há coerência na maioria das correspondência entre os tipos de tributos e situações na ordem decrescente de volume de valores
+
+-   Aproximadamente 62% do volume de parcelado é referente a contribuição previdenciária
+
+-   Aproximadamente 48% do volume de "devedor" é referente a contribuição previdenciária
+
+-   Cerca de 92% das multas estão com exigência suspensa por processo administrativo
+
+-   Cerca de 38% das exigências suspensas por processos judiciais estão associadas a COFINS
+
+```{r}
 
 grouped_sit<-
   creditos_ativos %>%
@@ -246,6 +141,7 @@ grouped_sit<-
   summarise(
     vl_total = sum(vl_total)
   ) %>%
+  mutate(vl_total = vl_total/10^9) %>%
   ungroup()
 
 
@@ -292,6 +188,17 @@ sankeyNetwork(Links = links, Nodes = nodes, Source = 'source',
               fontSize = 12, nodeWidth = 30, iterations = 0)
 
 
+```
+
+## Associação entre CNAE e situação (valores em R\$ bi)
+
+-   Seleção dos CNAES mais representativos cuja soma acumulada da porcentagem do valor total de créditos ativos é menor ou igual a 80%.
+
+-   57% dos valores de administração pública estão na situação parcelado
+
+-   45% das exigências suspensas por processos judiciais estão associadas a atividades financeiras
+
+```{r}
 #sankey cnae situação
 
 grouped_sit_cnae<-
@@ -303,6 +210,7 @@ grouped_sit_cnae<-
   summarise(
     vl_total = sum(vl_total)
   ) %>%
+  mutate(vl_total = vl_total/10^9) %>%
   ungroup()
 
 
@@ -341,19 +249,6 @@ sankeyNetwork(Links = links, Nodes = nodes, Source = 'source',
               fontSize = 12, nodeWidth = 30, iterations = 0)
 
 
-creditos_ativos %>%
-  filter(data == "2023-05-01") %>%
-  group_by(uf) %>%
-  summarise(
-    total = sum(vl_total)
-  ) %>%
-  arrange(desc(total))
 
 
-creditos_ativos %>%
-  filter(data == "2023-05-01") %>%
-  group_by(uf) %>%
-  summarise(
-    total = sum(vl_total)
-  ) %>%
-  arrange(total)
+```
