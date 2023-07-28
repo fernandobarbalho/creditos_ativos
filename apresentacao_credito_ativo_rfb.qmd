@@ -14,6 +14,7 @@ execute:
 library(networkD3)
 library(tidyverse)
 library(questionr)
+library(colorspace)
 
 creditos_ativos <- readRDS("creditos_ativos_rfb.RDS")
 ```
@@ -30,17 +31,11 @@ creditos_ativos <- readRDS("creditos_ativos_rfb.RDS")
 
 5.  Existem 19 diferentes tipos de CNAEs (Classificação Nacional de Atividades Econômicas) nos dados.
 
-## Associação entre CNAES e tributos (valores em R\$ bi)
-
--   Seleção das seções CNAE mais representativas cuja soma acumulada da porcentagem do valor total de créditos ativos é menor ou igual a 80%.
+## Ranking de valores de créditos ativos para tributos
 
 -   Seleção dos tipos de tributos mais representativos cuja soma acumulada da porcentagem do valor total de créditos ativosé menor ou igual a 80%.
-
--   Há coerência na maioria das correspondência entre os cnaes e tipos de tributos na ordem decrescente de volume de valores
-
--   98% dos valores de Administração pública estão associados a Contribuição Previdenciária
-
--    46% dos valores de CSLL vêm de atividades financeiras
+-   42% dos créditos ativos estão associados a IRPJ e COFINS
+-   A figura mostra os tributos que serão explorados nos slides deste trabalho
 
 ```{r}
 total_credito<- sum(creditos_ativos$vl_total[creditos_ativos$data == max(creditos_ativos$data)])
@@ -67,6 +62,107 @@ top_tax_groups<-
      arrange(desc(vl_percentual)) %>%
      mutate( perc_acum = cumsum(vl_percentual)) %>%
      filter(perc_acum<=0.8))$grupo_tributo
+
+creditos_ativos %>%
+  filter(data== max(creditos_ativos$data),
+         grupo_tributo %in% top_tax_groups) %>%
+  group_by(grupo_tributo) %>%
+  summarise(valor = sum(vl_total)) %>%
+  ungroup() %>%
+  mutate(grupo_tributo = reorder(grupo_tributo, valor)) %>%
+  ggplot() +
+  geom_col(aes(x= valor/10^9, y= grupo_tributo, fill=valor/10^9 )) +
+  scale_fill_continuous_sequential(palette = "Heat 2")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.title = element_blank()
+  ) +
+  labs(
+    title= "Cinco créditos ativos mais relevantes",
+    subtitle = "Valores em R$ bilhões"
+  ) 
+  
+  
+
+```
+
+## Ranking de valores de créditos ativos para CNAES
+
+-   61% dos créditos estão com exigência suspensa por processos administrativos
+
+```{r}
+creditos_ativos %>%
+  mutate(cnae_secao_descr = ifelse(cnae_secao_descr=="N/A","Pessoa Física",stringr::str_to_title(cnae_secao_descr) )) %>%
+  filter(data== "2023-05-01") %>%
+  group_by(situacao) %>%
+  summarise(valor = sum(vl_total)) %>%
+  ungroup() %>%
+  mutate(situacao = str_wrap(situacao,20)) %>%
+  mutate(situacao = reorder(situacao, valor)) %>%
+  ggplot() +
+  geom_col(aes(x= valor/10^9, y= situacao , fill=valor/10^9 )) +
+  scale_fill_continuous_sequential(palette = "Heat 2")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.title = element_blank()
+  ) +
+  labs(
+    title= "Situações do crédito",
+    subtitle = "Valores em R$ bilhões"
+  ) 
+
+  
+```
+
+## Ranking de situações do crédito
+
+```{r}
+creditos_ativos %>%
+  filter(data== "2023-05-01",
+         cnae_secao_descr %in% top_cnae_sections,
+         ) %>%
+  group_by(cnae_secao_descr) %>%
+  summarise(valor = sum(vl_total)) %>%
+  ungroup() %>%
+  mutate(cnae_secao_descr = str_wrap(cnae_secao_descr,20)) %>%
+  mutate(cnae_secao_descr = reorder(cnae_secao_descr, valor)) %>%
+  ggplot() +
+  geom_col(aes(x= valor/10^9, y= cnae_secao_descr , fill=valor/10^9 )) +
+  scale_fill_continuous_sequential(palette = "Heat 2")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.title = element_blank()
+  ) +
+  labs(
+    title= "Seis CNAES mais relevantes",
+    subtitle = "Valores em R$ bilhões"
+  ) 
+
+```
+
+
+
+## Associação entre CNAES e tributos (valores em R\$ bi)
+
+-   Há coerência na maioria das correspondência entre os cnaes e tipos de tributos na ordem decrescente de volume de valores
+
+-   98% dos valores de Administração pública estão associados a Contribuição Previdenciária
+
+-   46% dos valores de CSLL vêm de atividades financeiras
+
+```{r}
 
 grouped_cnae<-
   creditos_ativos %>%

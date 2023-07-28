@@ -357,3 +357,28 @@ creditos_ativos %>%
     total = sum(vl_total)
   ) %>%
   arrange(total)
+
+
+creditos_ativos %>%
+  mutate(cnae_secao_descr = ifelse(cnae_secao_descr=="N/A","Pessoa Física",stringr::str_to_title(cnae_secao_descr) )) %>%
+  filter(data== "2023-05-01",
+         cnae_secao_descr %in% top_cnae_sections) %>%
+  group_by(cnae_secao_descr) %>%
+  summarise(valor = sum(vl_total)) %>%
+  ungroup() %>%
+  mutate(cnae_secao_descr = reorder(cnae_secao_descr, valor)) %>%
+  ggplot() +
+  geom_col(aes(x= valor/10^9, y= cnae_secao_descr, fill=valor/10^9 )) +
+  scale_fill_continuous_sequential(palette = "Heat 2")+
+  theme_light() +
+  theme(
+    panel.background = element_rect(fill = "#15202B"),
+    panel.grid = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.title = element_blank()
+  ) +
+  labs(
+    title= "Seis CNAES mais relevantes",
+    subtitle = "Valores em R$ bilhões"
+  )
