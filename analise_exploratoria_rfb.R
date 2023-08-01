@@ -54,15 +54,14 @@ calcula_valor_constante <- function(df_dados_hist, data_constante ){
   #Calcula o número índice para todos os meses da série temporal
   num_index<-
     map_dbl(1:NROW(IPCA_historico), function(a_i){
-      if (a_i==1){
-        100
-      }else {
-        100+ prod(1+IPCA_historico$valor[1:a_i]/100)
-      }
+
+      prod(1+IPCA_historico$valor[1:a_i]/100)
 
     })
 
   IPCA_historico$num_indice <- num_index
+
+
 
   num_indice_constante<-
     (IPCA_historico%>%
@@ -286,3 +285,9 @@ contencioso_administrativo_de_primeira_instancia %>%
 
   resultado<- Kendall(decomp$trend,1:NROW(decomp$trend))
 
+
+  df_dados_hist<-
+    tibble(data=as.Date("1997-07-01"), valor =100)
+
+
+  df_valores_constantes<- calcula_valor_constante(df_dados_hist, "1997-08-01" )
