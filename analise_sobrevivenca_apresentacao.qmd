@@ -110,24 +110,35 @@ flex_tab <- flex_tab %>%
   align(align = "right", part = "all") %>%
   autofit()
 
-# Criar slide no PowerPoint
-# doc <- read_pptx()
-# doc <- add_slide(doc, layout = "Title and Content")
-# doc <- ph_with_flextable(doc, flex_tab, location = ph_location_type("body"))
-# 
-# # Salvar o arquivo PowerPoint
-# print(doc, target = "nome_do_arquivo.pptx")
 
 flex_tab
 ```
 
 ## Análise por cluster de valores consolidados
 
--   O cluster 1 possui a maior quantidade de eventos, com um total de 808,720. A mediana da sobrevivência é de 218 dias, com um intervalo de confiança de 95% entre 218 e 218 dias.
+```{r}
 
--   O cluster 4 apresenta a menor quantidade de eventos, com apenas 78. A mediana da sobrevivência não pode ser calculada (NA), mas o intervalo de confiança de 95% indica que a sobrevivência pode variar entre 343 dias e um valor não calculado (NA).
+estoque_total<- sum(dados_longitudinais_trabalho_full$valor_consolidado)
 
--   A mediana da sobrevivência nos clusters 2 e 3 é maior em comparação ao cluster 1. No cluster 2, a mediana é de 297 dias, com um intervalo de confiança de 95% entre 294 e 299 dias. No cluster 3, a mediana é de 319 dias, com um intervalo de confiança de 95% entre 315 e 324 dias.
+# Criação da tabela
+tabela_valores <- 
+  dados_longitudinais_trabalho_full %>%
+  group_by(cluster) %>%
+  summarise(
+    #estoque = sum(valor_consolidado) ,
+    perc_estoque = (sum(valor_consolidado)/estoque_total)*100)
+
+tabela_valores
+
+```
+
+## Análise por cluster de valores consolidados
+
+-   O cluster 1 possui a maior quantidade de eventos, com um total de 808,720. A mediana da sobrevivência é de 218 meses, com um intervalo de confiança de 95% entre 218 e 218 meses.
+
+-   O cluster 4 apresenta a menor quantidade de eventos, com apenas 78. A mediana da sobrevivência não pode ser calculada (NA), mas o intervalo de confiança de 95% indica que a sobrevivência pode variar entre 343 meses e um valor não calculado (NA).
+
+-   A mediana da sobrevivência nos clusters 2 e 3 é maior em comparação ao cluster 1. No cluster 2, a mediana é de 297 meses, com um intervalo de confiança de 95% entre 294 e 299 meses. No cluster 3, a mediana é de 319 meses, com um intervalo de confiança de 95% entre 315 e 324 meses.
 
 ```{r}
 sobrevivencia <- Surv(time = dados_longitudinais_trabalho_full$diferenca_max_meses,
@@ -202,7 +213,7 @@ flex_tab
 
 ## Análise por tipo de pessoa: física ou jurídica
 
--    A análise revela que, em termos percentuais, as pessoas físicas (PF) contribuem com aproximadamente 7.0% do valor total da dívida ativa, enquanto as pessoas jurídicas (PJ) representam uma proporção significativamente maior, contribuindo com cerca de 93.0% do valor total.
+-   A análise revela que, em termos percentuais, as pessoas físicas (PF) contribuem com aproximadamente 7.0% do valor total da dívida ativa, enquanto as pessoas jurídicas (PJ) representam uma proporção significativamente maior, contribuindo com cerca de 93.0% do valor total.
 
 ```{r}
 dados_longitudinais_trabalho_full %>%
@@ -283,7 +294,7 @@ g1/g2/g3
 
 ## Análise por tipo de pessoa: física ou jurídica
 
--   A mediana da sobrevivência para pessoas físicas é de 192 dias, com um intervalo de confiança de 95% entre 189 e 194 dias. Já para pessoas jurídicas, a mediana da sobrevivência é de 224 dias, com um intervalo de confiança de 95% entre 224 e 225 dias.
+-   A mediana da sobrevivência para pessoas físicas é de 192 meses, com um intervalo de confiança de 95% entre 189 e 194 meses. Já para pessoas jurídicas, a mediana da sobrevivência é de 224 meses, com um intervalo de confiança de 95% entre 224 e 225 meses.
 
 ```{r}
 ajuste_tipo_pessoa <- survfit(sobrevivencia ~ tipo_pessoa, data = dados_longitudinais_trabalho_full)
@@ -299,9 +310,9 @@ ggsurvplot(ajuste_tipo_pessoa,
 
 ## Análise por tipo de pessoa e cluster
 
--   Para pessoas físicas, o cluster 1 possui um maior número de registros (759,076) em comparação com os outros clusters. A mediana da sobrevivência é de 187 dias, com um intervalo de confiança de 95% entre 184 e 189 dias. Já o cluster 4 apresenta um número muito baixo de registros (104) e a mediana da sobrevivência não pode ser calculada (NA).
+-   Para pessoas físicas, o cluster 1 possui um maior número de registros (759,076) em comparação com os outros clusters. A mediana da sobrevivência é de 187 meses, com um intervalo de confiança de 95% entre 184 e 189 meses. Já o cluster 4 apresenta um número muito baixo de registros (104) e a mediana da sobrevivência não pode ser calculada (NA).
 
--   Para pessoas jurídicas, o cluster 1 também possui o maior número de registros (3,286,069) em comparação com os outros clusters. A mediana da sobrevivência é de 224 dias, com um intervalo de confiança de 95% entre 223 e 224 dias. O cluster 4, assim como nas pessoas físicas, possui um número muito baixo de registros (1,900) e a mediana da sobrevivência não pode ser calculada (NA).
+-   Para pessoas jurídicas, o cluster 1 também possui o maior número de registros (3,286,069) em comparação com os outros clusters. A mediana da sobrevivência é de 224 meses, com um intervalo de confiança de 95% entre 223 e 224 meses. O cluster 4, assim como nas pessoas físicas, possui um número muito baixo de registros (1,900) e a mediana da sobrevivência não pode ser calculada (NA).
 
 ```{r}
 ajuste_tipo_pessoa_cluster <- survfit(sobrevivencia ~ tipo_pessoa + cluster, data = dados_longitudinais_trabalho_full)
@@ -495,9 +506,9 @@ g1+g2
 
 ## Análise por crédito ajuizado
 
--   No grupo de créditos em que não houve ajuizamento, há um total de 2,852,531 registros. A mediana da sobrevivência é de 109 dias.
+-   No grupo de créditos em que não houve ajuizamento, há um total de 2,852,531 registros. A mediana da sobrevivência é de 109 meses.
 
--   Por outro lado, no grupo de créditos em que houve ajuizamento, há um número menor de registros (1,304,231). A mediana da sobrevivência é de 250 dias.
+-   Por outro lado, no grupo de créditos em que houve ajuizamento, há um número menor de registros (1,304,231). A mediana da sobrevivência é de 250 meses.
 
 ```{r}
 ajuste_ajuizado <- survfit(sobrevivencia ~ indicador_ajuizado, data = dados_longitudinais_trabalho_full)
@@ -511,7 +522,7 @@ ggsurvplot(ajuste_ajuizado,
 
 ## Análise por crédito ajuizado
 
--    No cluster 1 oberva-se grande diferença entre os tempos de ajuizado e não ajuizado em PJ. Isso não ocorre no caso de PF.
+-   No cluster 1 oberva-se grande diferença entre os tempos de ajuizado e não ajuizado em PJ. Isso não ocorre no caso de PF.
 
 -   Ainda no cluster 1, no caso de PJ, o tempo para alcançar o 50% de sobrevivência é bem menor do que o de PF, quando se analisa os créditos não ajuizados o que não combina com o que normalmente se espera na comparação entre PF e PJ.
 
@@ -699,29 +710,38 @@ g1/g2
 
 -   As principais categorias de receita principal que se destacam são:
 
-    -   "DIV ATIVA-SIMPLES NACIONAL" com uma mediana de sobrevivência de 80.1 dias.
+    -   "DIV ATIVA-SIMPLES NACIONAL" com uma mediana de sobrevivência de 80.1 meses.
 
-    -   "R D Ativa - Multa Isolada" com uma mediana de sobrevivência de 161.4 dias.
+    -   "R D Ativa - Multa Isolada" com uma mediana de sobrevivência de 161.4 meses.
 
-    -   CSLL e IRPJ com mediana de sobrevivência de 246,2 dias
+    -   CSLL e IRPJ com mediana de sobrevivência de 246,2 meses
 
 ```{r}
 
 trabalho_receita_principal<-
   dados_longitudinais_trabalho_full %>%
-  filter(receita_principal %in% top_8_receita_principal)
+  rename(receita= receita_principal) %>%
+  filter(receita %in% top_8_receita_principal) %>%
+  mutate(receita = str_replace_all(receita, "Multa - CLT", "Multa CLT")) %>%
+  separate(receita, into =c("prefixo","receita"), "-") %>%
+  mutate(receita= str_squish(receita))
+
+
 
 
 sobrevivencia_receita_principal <- Surv(time = trabalho_receita_principal$diferenca_max_meses,
                                         event = trabalho_receita_principal$status)
 
-ajuste_receita_principal <- survfit(sobrevivencia_receita_principal ~ receita_principal, data = trabalho_receita_principal)
+ajuste_receita_principal <- survfit(sobrevivencia_receita_principal ~ receita, data = trabalho_receita_principal)
+
 
 ggsurvplot(ajuste_receita_principal,
            data = trabalho_receita_principal,
            conf.int = TRUE,
            censor=FALSE,
-           surv.median.line= "hv")
+           surv.median.line= "hv") 
+
+
 ```
 
 ## Análise por tipo de receita do principal
@@ -731,8 +751,23 @@ ggsurvplot(ajuste_receita_principal,
 -   os créditos relacionados ao Simples nacional e Multas isoladas estão associados ao fenômeno da redução da expetativa mediana de sobrevivência da combinação de pessoa jurídica com o cluster 1, principalmente quado se foca nos lançamentos ajuizados
 
 ```{r}
-ggsurvplot(ajuste_receita_principal,
-           data = trabalho_receita_principal,
+
+trabalho_receita_principal_cluster1<-
+  trabalho_receita_principal %>%
+  filter(cluster== "1")
+
+
+sobrevivencia_receita_principal_cluster1 <- Surv(time = trabalho_receita_principal_cluster1$diferenca_max_meses,
+                                        event = trabalho_receita_principal_cluster1$status)
+
+
+ajuste_receita_principal_cluster1 <- survfit(sobrevivencia_receita_principal_cluster1 ~ receita, data = trabalho_receita_principal_cluster1)
+
+
+
+
+ggsurvplot(ajuste_receita_principal_cluster1,
+           data = trabalho_receita_principal_cluster1,
            conf.int = TRUE,
            censor=FALSE,
            surv.median.line= "hv",
